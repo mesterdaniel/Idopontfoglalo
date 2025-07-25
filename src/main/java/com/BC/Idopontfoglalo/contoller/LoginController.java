@@ -9,4 +9,14 @@ public class LoginController {
     public String login(){
         return "login";
     }
+
+    @GetMapping("/adminDashboard")
+    public String adminDashboard() {
+        return "adminDashboard";
+    }
+
+    @GetMapping("/userDashboard")
+    public String userDashboard() {
+        return "userDashboard";
+    }
 }

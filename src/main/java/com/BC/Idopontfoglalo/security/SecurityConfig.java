@@ -1,5 +1,7 @@
 package com.BC.Idopontfoglalo.security;
 
+import com.BC.Idopontfoglalo.contoller.CustomAuthenticationSuccessHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -11,6 +13,11 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 public class SecurityConfig {
+
+    @Autowired
+    private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
+
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -18,19 +25,24 @@ public class SecurityConfig {
                         .requestMatchers("/login","/css/**","/js/**").permitAll()
                         .requestMatchers("/register").permitAll()
                         .requestMatchers("/h2-console/**").hasRole("ADMIN")
+                        .requestMatchers("/adminDashboard/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .formLogin(login -> login
                         .loginPage("/login")
-                        .defaultSuccessUrl("/", true) // <- Belépés után ide irányít
+                        .successHandler(customAuthenticationSuccessHandler)
                         .permitAll()
                 )
-                .logout(Customizer.withDefaults());
-
-
-        http
+                .logout(logout -> logout
+                .logoutSuccessUrl("/login?logout")
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .deleteCookies("JSESSIONID")
+                .permitAll()
+        )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
+
         return http.build();
     }
 

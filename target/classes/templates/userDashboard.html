@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="hu" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Felhasználói Vezérlőpult</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 2em;
+            background-color: #f2f2f2;
+        }
+        .container {
+            background-color: white;
+            padding: 2em;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: auto;
+        }
+        h1 {
+            color: #333;
+        }
+        .logout {
+            margin-top: 1em;
+        }
+        .logout a {
+            text-decoration: none;
+            color: #c00;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Üdvözöllek a Felhasználói Vezérlőpulton!</h1>
+    <p>Itt tudod kezelni a foglalásaidat, megtekinteni az időpontokat, vagy kapcsolatba lépni az adminnal.</p>
+
+    <div class="logout">
+        <a href="/logout">Kijelentkezés</a>
+    </div>
+</div>
+</body>
+</html>
