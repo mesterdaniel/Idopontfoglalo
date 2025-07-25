@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    header {
+      margin-bottom: 30px;
+    }
+    nav a {
+      margin-right: 20px;
+    }
+    .card {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Admin Dashboard</h1>
+  <p>Üdvözöllek, <strong th:text="${username}">Admin</strong>!</p>
+  <nav>
+    <a href="/">Kezdőlap</a>
+    <a href="/logout">Kijelentkezés</a>
+  </nav>
+</header>
+
+<section>
+  <div class="card">
+    <h2>Felhasználók kezelése</h2>
+    <p>Itt hozzáférhetsz a felhasználók listájához, módosításához vagy törléséhez.</p>
+    <a href="/admin/users">Felhasználók megtekintése</a>
+  </div>
+
+  <div class="card">
+    <h2>Időpontok kezelése</h2>
+    <p>Adminisztrálhatod az időpontokat, jóváhagyhatod vagy törölheted őket.</p>
+    <a href="/admin/appointments">Időpontok kezelése</a>
+  </div>
+</section>
+
+<script>
+  window.addEventListener("beforeunload", function (e) {
+    navigator.sendBeacon('/logout');
+  });
+</script>
+
+</body>
+</html>
