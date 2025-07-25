@@ -9,12 +9,17 @@ import java.util.Set;
 public class Role {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    @Column(name = "role_name")
     private String roleName;
 
     @ManyToMany(mappedBy = "roles")
     private Set<User> users;
 
+    public Role() {}
+    public Role(Long id, String roleName) {
+        this.id = id;
+        this.roleName = roleName;
+    }
     public Set<User> getUsers() {
         return users;
     }

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Regisztráció</title>
+</head>
+<body>
+<h2>Regisztráció</h2>
+<form th:action="@{/register}" method="post">
+  <label>Felhasználónév: <input type="text" name="username"/></label><br/>
+  <label>Jelszó: <input type="password" name="password"/></label><br/>
+  <button type="submit">Regisztráció</button>
+</form>
+</body>
+</html>
