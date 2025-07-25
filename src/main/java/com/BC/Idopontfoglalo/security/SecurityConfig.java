@@ -1,0 +1,31 @@
+package com.BC.Idopontfoglalo.security;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+public class SecurityConfig {
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/login","/css/**","/js/**").permitAll()
+                        .requestMatchers("/h2-console/**").hasRole("ADMIN")
+                        .anyRequest().authenticated()
+                )
+                .formLogin(login -> login
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/", true) // <- Belépés után ide irányít
+                        .permitAll()
+                )
+                .logout(Customizer.withDefaults());
+
+
+        http
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
+        return http.build();
+    }
+}
