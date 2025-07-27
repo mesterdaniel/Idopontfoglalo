@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="hu" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Időpontjaim | Időpontfoglaló</title>
+    <style>
+        /* Általános stílusok */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Fejléc */
+        header {
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-content h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        nav a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Fő tartalom */
+        main {
+            padding: 2rem 0;
+        }
+
+        /* Üzenetek */
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        /* Akciós gombok */
+        .action-buttons {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 500;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2980b9, #27ae60);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Lapok (tabs) */
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 8px 8px 0 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 0;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 1rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tab-button.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .tab-button:first-child {
+            border-radius: 8px 0 0 0;
+        }
+
+        .tab-button:last-child {
+            border-radius: 0 8px 0 0;
+        }
+
+        /* Tab tartalom */
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Időpont kártyák */
+        .appointment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .appointment-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border-left: 4px solid;
+        }
+
+        .appointment-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .appointment-card.status-pending {
+            border-left-color: #f39c12;
+        }
+
+        .appointment-card.status-confirmed {
+            border-left-color: #27ae60;
+        }
+
+        .appointment-card.status-cancelled {
+            border-left-color: #e74c3c;
+        }
+
+        .appointment-card.status-completed {
+            border-left-color: #95a5a6;
+        }
+
+        .appointment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .appointment-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .appointment-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fef5e7;
+            color: #f39c12;
+        }
+
+        .status-confirmed {
+            background: #eafaf1;
+            color: #27ae60;
+        }
+
+        .status-cancelled {
+            background: #fdeaea;
+            color: #e74c3c;
+        }
+
+        .status-completed {
+            background: #f8f9fa;
+            color: #95a5a6;
+        }
+
+        .appointment-info {
+            margin-bottom: 1rem;
+        }
+
+        .appointment-info p {
+            margin: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .appointment-info strong {
+            color: #2c3e50;
+        }
+
+        .appointment-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid;
+            color: #3498db;
+            border-color: #3498db;
+        }
+
+        .btn-outline:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        /* Üres állapot */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            color: #95a5a6;
+            margin-bottom: 1rem;
+        }
+
+        /* Reszponzív design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .appointment-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab-button {
+                border-radius: 0 !important;
+            }
+        }
+
+        /* Animációk */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .appointment-card {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="container">
+        <div class="header-content">
+            <h1>Időpontjaim</h1>
+            <nav>
+                <a href="/">Kezdőlap</a>
+                <a href="/userDashboard">Dashboard</a>
+                <a href="/login">Kijelentkezés</a>
+            </nav>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <!-- Flash üzenetek -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+    <!-- Akciós gombok -->
+    <div class="action-buttons">
+        <a href="/user/new-appointment" class="btn btn-primary">✚ Új időpont foglalása</a>
+    </div>
+
+    <!-- Lapok -->
+    <div class="tabs">
+        <button class="tab-button active" onclick="showTab('all')">Összes időpont</button>
+        <button class="tab-button" onclick="showTab('upcoming')">Jövőbeli</button>
+        <button class="tab-button" onclick="showTab('past')">Múltbeli</button>
+    </div>
+
+    <!-- Összes időpont -->
+    <div id="all-tab" class="tab-content active">
+        <div th:if="${#lists.isEmpty(allAppointments)}" class="empty-state">
+            <h3>📅 Még nincsenek időpontjaid</h3>
+            <p>Klikkelj az "Új időpont foglalása" gombra az első időpont létrehozásához!</p>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(allAppointments)}" class="appointment-grid">
+            <div th:each="appointment : ${allAppointments}"
+                 class="appointment-card"
+                 th:classappend="${appointment.status.cssClass}">
+
+                <div class="appointment-header">
+                    <h3 class="appointment-title" th:text="${appointment.title}">Időpont címe</h3>
+                    <span class="appointment-status"
+                          th:classappend="${appointment.status.cssClass}"
+                          th:text="${appointment.status.displayName}">Státusz</span>
+                </div>
+
+                <div class="appointment-info">
+                    <p><strong>📅 Dátum:</strong>
+                        <span th:text="${#temporals.format(appointment.appointmentDate, 'yyyy. MM. dd. HH:mm')}">2024.01.15 10:00</span>
+                    </p>
+                    <p><strong>⏱️ Időtartam:</strong>
+                        <span th:text="${appointment.durationMinutes + ' perc'}">60 perc</span>
+                    </p>
+                    <p th:if="${appointment.description}" class="description">
+                        <strong>📝 Leírás:</strong>
+                        <span th:text="${appointment.description}">Leírás szövege</span>
+                    </p>
+                </div>
+
+                <div class="appointment-actions">
+                    <a th:href="@{/user/appointment/{id}(id=${appointment.id})}"
+                       class="btn btn-outline btn-sm">👁️ Megtekintés</a>
+
+                    <a th:if="${appointment.status.active}"
+                       th:href="@{/user/appointment/{id}/edit(id=${appointment.id})}"
+                       class="btn btn-outline btn-sm">✏️ Szerkesztés</a>
+
+                    <form th:if="${appointment.status.active}"
+                          th:action="@{/user/appointment/{id}/cancel(id=${appointment.id})}"
+                          method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-danger btn-sm"
+                                onclick="return confirm('Biztosan lemondod ezt az időpontot?')">
+                            ❌ Lemondás
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Jövőbeli időpontok -->
+    <div id="upcoming-tab" class="tab-content">
+        <div th:if="${#lists.isEmpty(upcomingAppointments)}" class="empty-state">
+            <h3>📅 Nincsenek jövőbeli időpontjaid</h3>
+            <p>Minden időpontod a múltban van, vagy nincsenek időpontjaid.</p>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(upcomingAppointments)}" class="appointment-grid">
+            <div th:each="appointment : ${upcomingAppointments}"
+                 class="appointment-card"
+                 th:classappend="${appointment.status.cssClass}">
+
+                <div class="appointment-header">
+                    <h3 class="appointment-title" th:text="${appointment.title}">Időpont címe</h3>
+                    <span class="appointment-status"
+                          th:classappend="${appointment.status.cssClass}"
+                          th:text="${appointment.status.displayName}">Státusz</span>
+                </div>
+
+                <div class="appointment-info">
+                    <p><strong>📅 Dátum:</strong>
+                        <span th:text="${#temporals.format(appointment.appointmentDate, 'yyyy. MM. dd. HH:mm')}">2024.01.15 10:00</span>
+                    </p>
+                    <p><strong>⏱️ Időtartam:</strong>
+                        <span th:text="${appointment.durationMinutes + ' perc'}">60 perc</span>
+                    </p>
+                    <p th:if="${appointment.description}">
+                        <strong>📝 Leírás:</strong>
+                        <span th:text="${appointment.description}">Leírás szövege</span>
+                    </p>
+                </div>
+
+                <div class="appointment-actions">
+                    <a th:href="@{/user/appointment/{id}(id=${appointment.id})}"
+                       class="btn btn-outline btn-sm">👁️ Megtekintés</a>
+
+                    <a th:if="${appointment.status.active}"
+                       th:href="@{/user/appointment/{id}/edit(id=${appointment.id})}"
+                       class="btn btn-outline btn-sm">✏️ Szerkesztés</a>
+
+                    <form th:if="${appointment.status.active}"
+                          th:action="@{/user/appointment/{id}/cancel(id=${appointment.id})}"
+                          method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-danger btn-sm"
+                                onclick="return confirm('Biztosan lemondod ezt az időpontot?')">
+                            ❌ Lemondás
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Múltbeli időpontok -->
+    <div id="past-tab" class="tab-content">
+        <div th:if="${#lists.isEmpty(pastAppointments)}" class="empty-state">
+            <h3>📅 Nincsenek múltbeli időpontjaid</h3>
+            <p>Még nem volt időpontod, vagy minden időpontod a jövőben van.</p>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(pastAppointments)}" class="appointment-grid">
+            <div th:each="appointment : ${pastAppointments}"
+                 class="appointment-card"
+                 th:classappend="${appointment.status.cssClass}">
+
+                <div class="appointment-header">
+                    <h3 class="appointment-title" th:text="${appointment.title}">Időpont címe</h3>
+                    <span class="appointment-status"
+                          th:classappend="${appointment.status.cssClass}"
+                          th:text="${appointment.status.displayName}">Státusz</span>
+                </div>
+
+                <div class="appointment-info">
+                    <p><strong>📅 Dátum:</strong>
+                        <span th:text="${#temporals.format(appointment.appointmentDate, 'yyyy. MM. dd. HH:mm')}">2024.01.15 10:00</span>
+                    </p>
+                    <p><strong>⏱️ Időtartam:</strong>
+                        <span th:text="${appointment.durationMinutes + ' perc'}">60 perc</span>
+                    </p>
+                    <p th:if="${appointment.description}">
+                        <strong>📝 Leírás:</strong>
+                        <span th:text="${appointment.description}">Leírás szövege</span>
+                    </p>
+                </div>
+
+                <div class="appointment-actions">
+                    <a th:href="@{/user/appointment/{id}(id=${appointment.id})}"
+                       class="btn btn-outline btn-sm">👁️ Megtekintés</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    function showTab(tabName) {
+        // Összes tab elrejtése
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        // Összes tab gomb inaktiválása
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('active');
+        });
+
+        // Kiválasztott tab megjelenítése
+        document.getElementById(tabName + '-tab').classList.add('active');
+
+        // Megfelelő gomb aktiválása
+        event.target.classList.add('active');
+    }
+</script>
+</body>
+</html>

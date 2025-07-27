@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="hu" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Új Időpont | Időpontfoglaló</title>
+    <style>
+        /* Általános stílusok */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Fejléc */
+        header {
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-content h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        nav a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Fő tartalom */
+        main {
+            padding: 2rem 0;
+        }
+
+        /* Üzenetek */
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        /* Űrlap kártya */
+        .form-card {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-card h2 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .form-card h2:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 3px;
+            background: linear-gradient(to right, #3498db, #2ecc71);
+        }
+
+        /* Űrlap mezők */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .required::after {
+            content: ' *';
+            color: #e74c3c;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="time"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Gombok */
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #2980b9, #27ae60);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-2px);
+        }
+
+        /* Segítő szövegek */
+        .help-text {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+
+        /* Előre definiált időtartamok */
+        .duration-options {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .duration-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid #e0e6ed;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .duration-btn:hover,
+        .duration-btn.active {
+            border-color: #3498db;
+            background: #3498db;
+            color: white;
+        }
+
+        /* Reszponzív design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .duration-options {
+                justify-content: center;
+            }
+        }
+
+        /* Animációk */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-card {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        /* Validáció stílusok */
+        .form-group.error input,
+        .form-group.error textarea {
+            border-color: #e74c3c;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="container">
+        <div class="header-content">
+            <h1>🗓️ Új Időpont Foglalása</h1>
+            <nav>
+                <a href="/user/appointments">🔙 Vissza az időpontokhoz</a>
+                <a href="/userDashboard">Dashboard</a>
+                <a href="/login">Kijelentkezés</a>
+            </nav>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <!-- Flash üzenetek -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+    <div class="form-card">
+        <h2>📝 Új Időpont Részletei</h2>
+
+        <form th:action="@{/user/new-appointment}" method="post" id="appointmentForm">
+
+            <!-- Cím -->
+            <div class="form-group">
+                <label for="title" class="required">📋 Időpont címe</label>
+                <input type="text"
+                       id="title"
+                       name="title"
+                       placeholder="pl. Orvosi vizsgálat, Üzleti tárgyalás, stb."
+                       required
+                       maxlength="100">
+                <div class="help-text">Adj egy rövid, beszédes nevet az időpontnak (max. 100 karakter)</div>
+            </div>
+
+            <!-- Leírás -->
+            <div class="form-group">
+                <label for="description">📝 Részletes leírás (opcionális)</label>
+                <textarea id="description"
+                          name="description"
+                          placeholder="Itt írhatsz részletesebb információkat az időpontról..."
+                          maxlength="500"></textarea>
+                <div class="help-text">Opcionális részletek az időpontról (max. 500 karakter)</div>
+            </div>
+
+            <!-- Dátum és idő -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="appointmentDate" class="required">📅 Dátum</label>
+                    <input type="date"
+                           id="appointmentDate"
+                           name="appointmentDate"
+                           required
+                           th:min="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+                    <div class="help-text">Válaszd ki a kívánt dátumot</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="appointmentTime" class="required">🕐 Időpont</label>
+                    <input type="time"
+                           id="appointmentTime"
+                           name="appointmentTime"
+                           required>
+                    <div class="help-text">Add meg a pontos időpontot</div>
+                </div>
+            </div>
+
+            <!-- Időtartam -->
+            <div class="form-group">
+                <label for="durationMinutes" class="required">⏱️ Időtartam (percben)</label>
+                <input type="number"
+                       id="durationMinutes"
+                       name="durationMinutes"
+                       min="15"
+                       max="480"
+                       value="60"
+                       required>
+
+                <!-- Gyors választás gombok -->
+                <div class="duration-options">
+                    <button type="button" class="duration-btn" onclick="setDuration(15)">15 perc</button>
+                    <button type="button" class="duration-btn" onclick="setDuration(30)">30 perc</button>
+                    <button type="button" class="duration-btn active" onclick="setDuration(60)">1 óra</button>
+                    <button type="button" class="duration-btn" onclick="setDuration(90)">1.5 óra</button>
+                    <button type="button" class="duration-btn" onclick="setDuration(120)">2 óra</button>
+                    <button type="button" class="duration-btn" onclick="setDuration(180)">3 óra</button>
+                </div>
+                <div class="help-text">Az időpont várható időtartama percben (15 perc - 8 óra)</div>
+            </div>
+
+            <!-- Űrlap műveletek -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    💾 Időpont Létrehozása
+                </button>
+                <a href="/user/appointments" class="btn btn-secondary">
+                    ❌ Mégse
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Hasznos tippek -->
+    <div class="form-card">
+        <h2>💡 Hasznos Tippek</h2>
+        <ul style="color: #666; line-height: 1.8;">
+            <li><strong>Időpont állapota:</strong> Az új időpontok "Függőben" állapottal jönnek létre, és admin jóváhagyásra várnak.</li>
+            <li><strong>Ütközés ellenőrzése:</strong> A rendszer automatikusan ellenőrzi, hogy nincs-e már másik időpont az adott időszakban.</li>
+            <li><strong>Módosítás:</strong> A létrehozott időpontokat később módosíthatod, amíg aktív állapotban vannak.</li>
+            <li><strong>Lemondás:</strong> Az időpontokat bármikor lemondhatod a részletek oldalról.</li>
+        </ul>
+    </div>
+</main>
+
+<script>
+    // Időtartam beállítása
+    function setDuration(minutes) {
+        document.getElementById('durationMinutes').value = minutes;
+
+        // Aktív gomb frissítése
+        document.querySelectorAll('.duration-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+    }
+
+    // Űrlap validáció
+    document.getElementById('appointmentForm').addEventListener('submit', function(e) {
+        const title = document.getElementById('title').value.trim();
+        const date = document.getElementById('appointmentDate').value;
+        const time = document.getElementById('appointmentTime').value;
+        const duration = parseInt(document.getElementById('durationMinutes').value);
+
+        // Alapvető validációk
+        if (!title) {
+            alert('Az időpont címe kötelező!');
+            e.preventDefault();
+            return;
+        }
+
+        if (!date || !time) {
+            alert('A dátum és időpont megadása kötelező!');
+            e.preventDefault();
+            return;
+        }
+
+        if (duration < 15 || duration > 480) {
+            alert('Az időtartam 15 perc és 8 óra között kell legyen!');
+            e.preventDefault();
+            return;
+        }
+
+        // Múltbeli dátum ellenőrzése
+        const selectedDateTime = new Date(date + 'T' + time);
+        const now = new Date();
+
+        if (selectedDateTime <= now) {
+            alert('Nem foglalhatsz időpontot múltbeli időpontra!');
+            e.preventDefault();
+            return;
+        }
+
+        // Megerősítés
+        const confirmation = confirm(
+            `Biztosan létrehozod ezt az időpontot?\n\n` +
+            `Cím: ${title}\n` +
+            `Dátum: ${formatDate(selectedDateTime)}\n` +
+            `Időtartam: ${duration} perc`
+        );
+
+        if (!confirmation) {
+            e.preventDefault();
+        }
+    });
+
+    // Dátum formázás
+    function formatDate(date) {
+        return date.toLocaleDateString('hu-HU', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    // Oldal betöltésekor a mai dátum beállítása minimumként
+    window.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('appointmentDate').min = today;
+    });
+</script>
+</body>
+</html>
