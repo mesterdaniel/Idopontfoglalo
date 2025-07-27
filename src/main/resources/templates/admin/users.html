@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="hu" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin - Felhasználók kezelése</title>
+    <style>
+        /* Általános stílusok */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Admin fejléc */
+        header {
+            background: linear-gradient(135deg, #e74c3c, #8e44ad);
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-content h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .admin-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        nav a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Fő tartalom */
+        main {
+            padding: 2rem 0;
+        }
+
+        /* Üzenetek */
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        /* Statisztika kártyák */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-left: 6px solid;
+            text-align: center;
+        }
+
+        .stat-card.total-users {
+            border-left-color: #3498db;
+        }
+
+        .stat-card.active-users {
+            border-left-color: #27ae60;
+        }
+
+        .stat-card.inactive-users {
+            border-left-color: #e74c3c;
+        }
+
+        .stat-card.new-users {
+            border-left-color: #f39c12;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: #666;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Szűrők */
+        .filters {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            border-left: 6px solid #8e44ad;
+        }
+
+        .filters h3 {
+            margin: 0 0 1rem 0;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .filter-group label {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .btn-filter {
+            background: #8e44ad;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .btn-filter:hover {
+            background: #732d91;
+        }
+
+        /* Felhasználók táblázat */
+        .users-table-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-header h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .users-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .users-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .users-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* Felhasználó kártya (mobil nézet) */
+        .user-card {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid;
+            display: none;
+        }
+
+        .user-card.active {
+            border-left-color: #27ae60;
+        }
+
+        .user-card.inactive {
+            border-left-color: #e74c3c;
+        }
+
+        .user-card-header {
+            padding: 1rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .user-card-body {
+            padding: 1rem;
+        }
+
+        .user-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-email {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .user-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .user-meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .user-meta-label {
+            font-size: 0.8rem;
+            color: #999;
+            text-transform: uppercase;
+        }
+
+        .user-meta-value {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        /* Státusz badge */
+        .status-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-active {
+            background: #eafaf1;
+            color: #27ae60;
+            border: 1px solid #27ae60;
+        }
+
+        .status-inactive {
+            background: #fdeaea;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+
+        /* Akció gombok */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+
+        /* Üres állapot */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Reszponzív design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .filter-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .users-table {
+                display: none;
+            }
+
+            .user-card {
+                display: block;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .user-meta {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animációk */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-card,
+        .filters,
+        .users-table-container,
+        .user-card {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        /* Lapozás */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        .pagination a,
+        .pagination span {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .pagination .current {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .pagination a:hover {
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="container">
+        <div class="header-content">
+            <div>
+                <h1>👥 Admin - Felhasználók</h1>
+                <span class="admin-badge">Adminisztrátor</span>
+            </div>
+            <nav>
+                <a href="/admin/appointments">📋 Időpontok</a>
+                <a href="/adminDashboard">📊 Dashboard</a>
+                <a href="/login">Kijelentkezés</a>
+            </nav>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <!-- Flash üzenetek -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+    <!-- Statisztikák -->
+    <div class="stats-grid">
+        <div class="stat-card total-users">
+            <div class="stat-number" th:text="${users.size()}">0</div>
+            <div class="stat-label">Összes felhasználó</div>
+        </div>
+        <div class="stat-card active-users">
+            <div class="stat-number" th:text="${#lists.size(#lists.select(users, user.enabled))}">0</div>
+            <div class="stat-label">Aktív felhasználók</div>
+        </div>
+        <div class="stat-card inactive-users">
+            <div class="stat-number" th:text="${#lists.size(#lists.select(users, !user.enabled))}">0</div>
+            <div class="stat-label">Inaktív felhasználók</div>
+        </div>
+        <div class="stat-card new-users">
+            <div class="stat-number" th:text="${#lists.size(#lists.select(users, #temporals.daysBetween(user.createdAt, #temporals.createNow()) <= 30))}">0</div>
+            <div class="stat-label">Új (30 nap)</div>
+        </div>
+    </div>
+
+    <!-- Szűrők -->
+    <div class="filters">
+        <h3>🔍 Szűrők</h3>
+        <form method="get" action="/admin/users">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="search">Keresés:</label>
+                    <input type="text" id="search" name="search" th:value="${param.search}"
+                           placeholder="Név, email vagy felhasználónév...">
+                </div>
+                <div class="filter-group">
+                    <label for="status">Státusz:</label>
+                    <select id="status" name="status">
+                        <option value="">Összes</option>
+                        <option value="active" th:selected="${param.status == 'active'}">Aktív</option>
+                        <option value="inactive" th:selected="${param.status == 'inactive'}">Inaktív</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="role">Szerepkör:</label>
+                    <select id="role" name="role">
+                        <option value="">Összes</option>
+                        <option value="USER" th:selected="${param.role == 'USER'}">Felhasználó</option>
+                        <option value="ADMIN" th:selected="${param.role == 'ADMIN'}">Admin</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn-filter">🔍 Szűrés</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Felhasználók táblázat -->
+    <div class="users-table-container">
+        <div class="table-header">
+            <h3>👥 Felhasználók listája</h3>
+            <span class="users-count" th:text="${users.size()} + ' felhasználó'">0 felhasználó</span>
+        </div>
+
+        <div th:if="${users.empty}" class="empty-state">
+            <div class="empty-state-icon">👤</div>
+            <h3>Nincsenek felhasználók</h3>
+            <p>Még nincsenek regisztrált felhasználók a rendszerben.</p>
+        </div>
+
+        <!-- Asztali nézet - Táblázat -->
+        <table th:if="${!users.empty}" class="users-table">
+            <thead>
+            <tr>
+                <th>👤 Felhasználó</th>
+                <th>📧 Email</th>
+                <th>📱 Telefon</th>
+                <th>🔑 Szerepkör</th>
+                <th>📅 Regisztráció</th>
+                <th>📊 Időpontok</th>
+                <th>🔄 Státusz</th>
+                <th>⚡ Műveletek</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="user : ${users}">
+                <!-- Felhasználó -->
+                <td>
+                    <div>
+                        <div class="user-name" th:text="${user.fullName ?: user.username}">Felhasználó neve</div>
+                        <div class="user-email" th:text="'@' + ${user.username}">@username</div>
+                    </div>
+                </td>
+
+                <!-- Email -->
+                <td th:text="${user.email}">email@example.com</td>
+
+                <!-- Telefon -->
+                <td th:text="${user.phoneNumber ?: 'Nincs megadva'}">+36 20 123 4567</td>
+
+                <!-- Szerepkör -->
+                <td>
+                    <span th:each="authority : ${user.authorities}"
+                          th:text="${authority.authority}"
+                          class="status-badge"
+                          th:classappend="${authority.authority == 'ROLE_ADMIN'} ? 'status-inactive' : 'status-active'">
+                        USER
+                    </span>
+                </td>
+
+                <!-- Regisztráció -->
+                <td th:text="${#temporals.format(user.createdAt, 'yyyy.MM.dd')}">2024.01.15</td>
+
+                <!-- Időpontok száma -->
+                <td th:text="${user.appointments?.size() ?: 0}">5</td>
+
+                <!-- Státusz -->
+                <td>
+                    <span class="status-badge"
+                          th:classappend="${user.enabled} ? 'status-active' : 'status-inactive'"
+                          th:text="${user.enabled} ? 'Aktív' : 'Inaktív'">
+                        Aktív
+                    </span>
+                </td>
+
+                <!-- Műveletek -->
+                <td>
+                    <div class="action-buttons">
+                        <a th:href="@{/admin/user/{id}(id=${user.id})}" class="btn btn-primary">
+                            👁️ Megtekint
+                        </a>
+
+                        <form th:action="@{/admin/user/{id}/toggle-status(id=${user.id})}"
+                              method="post" style="display: inline;">
+                            <button type="submit"
+                                    th:class="${user.enabled} ? 'btn btn-danger' : 'btn btn-success'"
+                                    th:onclick="'return confirm(\'Biztosan ' + (${user.enabled} ? 'letiltod' : 'engedélyezed') + ' ezt a felhasználót?\')'"
+                                    th:text="${user.enabled} ? '🚫 Letilt' : '✅ Engedélyez'">
+                                Művelet
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <!-- Mobil nézet - Kártyák -->
+        <div th:each="user : ${users}"
+             class="user-card"
+             th:classappend="${user.enabled} ? 'active' : 'inactive'">
+
+            <div class="user-card-header">
+                <div class="user-name" th:text="${user.fullName ?: user.username}">Felhasználó neve</div>
+                <div class="user-email" th:text="${user.email}">email@example.com</div>
+            </div>
+
+            <div class="user-card-body">
+                <div class="user-meta">
+                    <div class="user-meta-item">
+                        <div class="user-meta-label">Telefon</div>
+                        <div class="user-meta-value" th:text="${user.phoneNumber ?: 'Nincs megadva'}">+36 20 123 4567</div>
+                    </div>
+                    <div class="user-meta-item">
+                        <div class="user-meta-label">Regisztráció</div>
+                        <div class="user-meta-value" th:text="${#temporals.format(user.createdAt, 'yyyy.MM.dd')}">2024.01.15</div>
+                    </div>
+                    <div class="user-meta-item">
+                        <div class="user-meta-label">Időpontok</div>
+                        <div class="user-meta-value" th:text="${user.appointments?.size() ?: 0}">5</div>
+                    </div>
+                    <div class="user-meta-item">
+                        <div class="user-meta-label">Státusz</div>
+                        <div class="user-meta-value">
+                            <span class="status-badge"
+                                  th:classappend="${user.enabled} ? 'status-active' : 'status-inactive'"
+                                  th:text="${user.enabled} ? 'Aktív' : 'Inaktív'">
+                                Aktív
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <a th:href="@{/admin/user/{id}(id=${user.id})}" class="btn btn-primary">
+                        👁️ Megtekint
+                    </a>
+
+                    <form th:action="@{/admin/user/{id}/toggle-status(id=${user.id})}"
+                          method="post" style="display: inline;">
+                        <button type="submit"
+                                th:class="${user.enabled} ? 'btn btn-danger' : 'btn btn-success'"
+                                th:onclick="'return confirm(\'Biztosan ' + (${user.enabled} ? 'letiltod' : 'engedélyezed') + ' ezt a felhasználót?\')'"
+                                th:text="${user.enabled} ? '🚫 Letilt' : '✅ Engedélyez'">
+                            Művelet
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lapozás (opcionális - ha implementálva van) -->
+    <!--
+    <div class="pagination">
+        <a href="#" class="pagination-prev">« Előző</a>
+        <span class="current">1</span>
+        <a href="#">2</a>
+        <a href="#">3</a>
+        <a href="#" class="pagination-next">Következő »</a>
+    </div>
+    -->
+</main>
+
+<script>
+    // Keresés automatikus szűrés (opcionális)
+    document.getElementById('search').addEventListener('input', function() {
+        // Itt implementálhatod az élő keresést AJAX-szal
+    });
+
+    // Státusz változás megerősítés
+    document.querySelectorAll('form[action*="toggle-status"]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const isEnabled = this.querySelector('button').textContent.includes('Letilt');
+            const action = isEnabled ? 'letiltod' : 'engedélyezed';
+            if (!confirm(`Biztosan ${action} ezt a felhasználót?`)) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
+</body>
+</html>
