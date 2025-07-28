@@ -305,14 +305,33 @@
             <!-- Cím -->
             <div class="form-group">
                 <label for="title" class="required">📋 Időpont címe</label>
+                <select id="title-select" name="title" required>
+                    <option value="">-- Válassz egy opciót --</option>
+                    <option value="Orvosi vizsgálat">Orvosi vizsgálat</option>
+                    <option value="Üzleti tárgyalás">Üzleti tárgyalás</option>
+                    <option value="Egyéb">Egyéb</option>
+                </select>
                 <input type="text"
-                       id="title"
-                       name="title"
-                       placeholder="pl. Orvosi vizsgálat, Üzleti tárgyalás, stb."
-                       required
+                       id="title-input"
+                       name="title-custom"
+                       placeholder="Add meg az időpont címét"
+                       style="display: none; margin-top: 5px;"
                        maxlength="100">
-                <div class="help-text">Adj egy rövid, beszédes nevet az időpontnak (max. 100 karakter)</div>
+                <div class="help-text">Válassz a listából, vagy add meg saját címét</div>
             </div>
+
+            <script>
+                document.getElementById('title-select').addEventListener('change', function() {
+                    var inputField = document.getElementById('title-input');
+                    if (this.value === 'Egyéb') {
+                        inputField.style.display = 'block';
+                        inputField.setAttribute('required', '');
+                    } else {
+                        inputField.style.display = 'none';
+                        inputField.removeAttribute('required');
+                    }
+                });
+            </script>
 
             <!-- Leírás -->
             <div class="form-group">
