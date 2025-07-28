@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="hu" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Függőben Lévő Időpontok | Admin</title>
+    <style>
+        /* Általános stílusok */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Fejléc */
+        header {
+            background: linear-gradient(135deg, #2c3e50, #f39c12);
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-content h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-left: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        nav a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Fő tartalom */
+        main {
+            padding: 2rem 0;
+        }
+
+        /* Üzenetek */
+        .alert {
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        /* Statisztika */
+        .stats-banner {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            text-align: center;
+            border-left: 6px solid #f39c12;
+        }
+
+        .stats-banner h2 {
+            color: #2c3e50;
+            margin: 0 0 1rem 0;
+        }
+
+        .stats-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #f39c12;
+            margin: 0;
+        }
+
+        .stats-description {
+            color: #666;
+            margin: 0.5rem 0 0 0;
+        }
+
+        /* Gyors műveletek */
+        .quick-actions {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 500;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Időpont kártyák */
+        .appointments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .appointment-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-left: 6px solid #f39c12;
+            transition: all 0.3s ease;
+        }
+
+        .appointment-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .appointment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .appointment-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0;
+            flex: 1;
+        }
+
+        .pending-badge {
+            background: #fef5e7;
+            color: #f39c12;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            border: 2px solid #f39c12;
+        }
+
+        .appointment-info {
+            margin-bottom: 1.5rem;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            margin-bottom: 0.7rem;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .info-icon {
+            font-size: 1.2rem;
+            width: 25px;
+            text-align: center;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 80px;
+        }
+
+        .info-value {
+            color: #555;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .appointment-description {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 1.5rem;
+            border-left: 3px solid #3498db;
+        }
+
+        .appointment-description h4 {
+            margin: 0 0 0.5rem 0;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+
+        .appointment-actions {
+            display: flex;
+            gap: 0.7rem;
+            justify-content: center;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Üres állapot */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            color: #95a5a6;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state p {
+            color: #666;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* Tömeges műveletek */
+        .bulk-actions {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: none;
+        }
+
+        .bulk-actions.active {
+            display: block;
+        }
+
+        .bulk-actions h4 {
+            color: #2c3e50;
+            margin: 0 0 1rem 0;
+        }
+
+        /* Reszponzív design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .appointments-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-actions {
+                flex-direction: column;
+            }
+
+            .appointment-actions {
+                flex-direction: column;
+            }
+
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.3rem;
+            }
+
+            .info-label {
+                min-width: auto;
+            }
+        }
+
+        /* Animációk */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .appointment-card {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .appointment-card:nth-child(1) { animation-delay: 0.1s; }
+        .appointment-card:nth-child(2) { animation-delay: 0.2s; }
+        .appointment-card:nth-child(3) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+<header>
+    <div class="container">
+        <div class="header-content">
+            <h1>⏳ Függőben Lévő Időpontok</h1>
+            <nav>
+                <a href="/admin/appointments">🔙 Vissza az időpontokhoz</a>
+                <a href="/adminDashboard">🏠 Admin Dashboard</a>
+                <a href="/logout">🚪 Kijelentkezés</a>
+            </nav>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <!-- Flash üzenetek -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+    <!-- Statisztika banner -->
+    <div class="stats-banner">
+        <h2>Jóváhagyásra Váró Időpontok</h2>
+        <div class="stats-number" th:text="${pendingAppointments.size()}">0</div>
+        <p class="stats-description">
+            <span th:if="${pendingAppointments.size() == 0}">Minden időpont el van bírálva! 🎉</span>
+            <span th:if="${pendingAppointments.size() == 1}">1 időpont várja a jóváhagyásod</span>
+            <span th:if="${pendingAppointments.size() > 1}"
+                  th:text="${pendingAppointments.size() + ' időpont várja a jóváhagyásod'}">
+                    X időpont várja a jóváhagyásod
+                </span>
+        </p>
+    </div>
+
+    <!-- Gyors műveletek -->
+    <div class="quick-actions" th:if="${!#lists.isEmpty(pendingAppointments)}">
+        <button class="btn btn-success" onclick="approveAll()"
+                th:if="${pendingAppointments.size() > 1}">
+            ✅ Összes Jóváhagyása
+        </button>
+        <button class="btn btn-primary" onclick="toggleDetails()">
+            👁️ Részletek Ki/Be
+        </button>
+        <a href="/admin/appointments" class="btn btn-primary">
+            📋 Összes Időpont
+        </a>
+    </div>
+
+    <!-- Üres állapot -->
+    <div th:if="${#lists.isEmpty(pendingAppointments)}" class="empty-state">
+        <div class="empty-state-icon">✅</div>
+        <h3>Nincsenek függőben lévő időpontok!</h3>
+        <p>
+            Jelenleg minden időpont el van bírálva.
+            Az új időpontok automatikusan itt fognak megjelenni, amikor a felhasználók létrehozzák őket.
+        </p>
+        <div style="margin-top: 2rem;">
+            <a href="/admin/appointments" class="btn btn-primary">
+                📋 Összes Időpont Megtekintése
+            </a>
+        </div>
+    </div>
+
+    <!-- Függőben lévő időpontok -->
+    <div th:unless="${#lists.isEmpty(pendingAppointments)}" class="appointments-grid">
+        <div th:each="appointment : ${pendingAppointments}" class="appointment-card">
+            <!-- Fejléc -->
+            <div class="appointment-header">
+                <h3 class="appointment-title" th:text="${appointment.title}">Időpont címe</h3>
+                <div class="pending-badge">Függőben</div>
+            </div>
+
+            <!-- Alapinformációk -->
+            <div class="appointment-info">
+                <div class="info-row">
+                    <div class="info-icon">👤</div>
+                    <div class="info-label">Felhasználó:</div>
+                    <div class="info-value">
+                        <div class="user-info">
+                            <div class="user-avatar"
+                                 th:text="${appointment.user.username.substring(0,1).toUpperCase()}">U</div>
+                            <span th:text="${appointment.user.username}">username</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-icon">📅</div>
+                    <div class="info-label">Dátum:</div>
+                    <div class="info-value"
+                         th:text="${#temporals.format(appointment.appointmentDate, 'yyyy. MMMM dd. (EEEE)')}">
+                        2024. január 15. (hétfő)
+                    </div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-icon">🕐</div>
+                    <div class="info-label">Időpont:</div>
+                    <div class="info-value"
+                         th:text="${#temporals.format(appointment.appointmentDate, 'HH:mm') + ' - ' + #temporals.format(appointment.endTime, 'HH:mm')}">
+                        10:00 - 11:00
+                    </div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-icon">⏱️</div>
+                    <div class="info-label">Időtartam:</div>
+                    <div class="info-value" th:text="${appointment.durationMinutes + ' perc'}">60 perc</div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-icon">📝</div>
+                    <div class="info-label">Létrehozva:</div>
+                    <div class="info-value"
+                         th:text="${#temporals.format(appointment.createdAt, 'MM. dd. HH:mm')}">
+                        01. 10. 14:30
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leírás -->
+            <div th:if="${appointment.description}" class="appointment-description">
+                <h4>📋 Részletes leírás:</h4>
+                <p th:text="${appointment.description}">Az időpont részletes leírása...</p>
+            </div>
+
+            <!-- Műveletek -->
+            <div class="appointment-actions">
+                <a th:href="@{/admin/appointment/{id}(id=${appointment.id})}"
+                   class="btn btn-primary btn-sm">
+                    👁️ Részletek
+                </a>
+
+                <form th:action="@{/admin/appointment/{id}/approve(id=${appointment.id})}"
+                      method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-success btn-sm"
+                            onclick="return confirm('Biztosan jóváhagyod ezt az időpontot?')">
+                        ✅ Jóváhagyás
+                    </button>
+                </form>
+
+                <form th:action="@{/admin/appointment/{id}/reject(id=${appointment.id})}"
+                      method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                            onclick="return confirm('Biztosan elutasítod ezt az időpontot?\n\nEz a műveletet nem lehet visszavonni!')">
+                        ❌ Elutasítás
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    // Részletek ki/bekapcsolása
+    function toggleDetails() {
+        const descriptions = document.querySelectorAll('.appointment-description');
+        const button = event.target;
+
+        descriptions.forEach(desc => {
+            if (desc.style.display === 'none') {
+                desc.style.display = 'block';
+                button.textContent = '🙈 Részletek Elrejtése';
+            } else {
+                desc.style.display = 'none';
+                button.textContent = '👁️ Részletek Megjelenítése';
+            }
+        });
+    }
+
+    // Összes jóváhagyása (biztonsági okokból csak megerősítés után)
+    function approveAll() {
+        const count = document.querySelectorAll('.appointment-card').length;
+
+        if (confirm(`Biztosan jóváhagysz mind a ${count} függőben lévő időpontot?\n\nEz egy tömeges művelet, amit nem lehet visszavonni!`)) {
+            // Itt lehetne implementálni a tömeges jóváhagyást
+            alert('Tömeges jóváhagyás funkció fejlesztés alatt...\n\nEgyelőre egyesével hagyd jóvá az időpontokat.');
+        }
+    }
+
+    // Auto-refresh 60 másodpercenként (opcionális)
+    setInterval(() => {
+        // Csak akkor frissítsünk, ha vannak függőben lévő időpontok
+        if (document.querySelectorAll('.appointment-card').length > 0) {
+            location.reload();
+        }
+    }, 60000);
+
+    // Billentyűparancsok
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + R: Frissítés
+        if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+            location.reload();
+        }
+
+        // Escape: Vissza az időpontokhoz
+        if (e.key === 'Escape') {
+            window.location.href = '/admin/appointments';
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,10 +1,239 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Kezdőoldal</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kezdőoldal | Időpontfoglaló Rendszer</title>
+    <style>
+        /* Általános stílusok */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Fejléc stílusok */
+        header {
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        nav {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Tartalom */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 3rem 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        h1:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(to right, #3498db, #2ecc71);
+            border-radius: 3px;
+        }
+
+        p {
+            font-size: 1.2rem;
+            color: #666;
+            max-width: 600px;
+            margin-bottom: 2rem;
+        }
+
+        .status-message {
+            background-color: #e8f4fd;
+            color: #2c3e50;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 2rem;
+            border-left: 4px solid #3498db;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.8rem;
+            border-radius: 5px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, #3498db, #2ecc71);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #3498db;
+            border: 1px solid #3498db;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(to right, #2980b9, #27ae60);
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9fa;
+        }
+
+        /* Lábléc */
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 1.5rem;
+            margin-top: auto;
+        }
+
+        /* Animációk */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        main > * {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        h1 { animation-delay: 0.1s; }
+        .status-message { animation-delay: 0.2s; }
+        p { animation-delay: 0.3s; }
+        .cta-buttons { animation-delay: 0.4s; }
+
+        /* Reszponzív design */
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            nav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
 </head>
 <body>
-<h1>Üdvözöllek az időpontfoglaló rendszerben!</h1>
-<p>Be vagy jelentkezve.</p>
+<header>
+    <div class="header-container">
+        <div class="logo">🗓️ Időpontfoglaló</div>
+        <nav>
+            <a href="/user/appointments">📅 Időpontjaim</a>
+            <a href="/userDashboard">🏠 Profil</a>
+            <a href="/login">🚪 Kijelentkezés</a>
+        </nav>
+    </div>
+</header>
+
+<main>
+    <h1>Üdvözöllek az időpontfoglaló rendszerben!</h1>
+
+    <div class="status-message" th:if="${#authentication.authenticated}">
+        Be vagy jelentkezve <strong th:text="${#authentication.name}"></strong> felhasználóként.
+    </div>
+
+    <p>Könnyedén kezelheted foglalásaidat és időpontjaidat egy helyen. Használd nyugodtan a rendszert!</p>
+
+    <div class="cta-buttons">
+        <a href="/user/appointments" class="btn btn-primary">📋 Foglalásaim</a>
+        <a href="/user/new-appointment" class="btn btn-secondary">➕ Új foglalás</a>
+    </div>
+</main>
+
+<footer>
+    <p>&copy; 2025 Időpontfoglaló Rendszer. Minden jog fenntartva.</p>
+</footer>
 </body>
 </html>
