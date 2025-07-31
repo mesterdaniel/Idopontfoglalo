@@ -9,6 +9,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import java.util.List;
+
 @Controller
 public class LoginController {
 
@@ -30,10 +32,17 @@ public class LoginController {
         return "admin/dashboard";
     }
 
-    @GetMapping("/userDashboard")
-    public String userDashboard(Authentication authentication, Model model) {
-        model.addAttribute("username", authentication.getName());
-        return "userDashboard";
+    @GetMapping("/appointments")
+    public String listDepartments(Model model, Authentication authentication) {
+        try {
+            List<Department> activeDepartments = departmentService.getAllActiveDepartments();
+            model.addAttribute("departments", activeDepartments);
+            model.addAttribute("username", authentication.getName());
+            return "user/user-departments";
+        } catch (Exception e) {
+            model.addAttribute("error", "Hiba történt a részlegek betöltésekor: " + e.getMessage());
+            return "user/user-departments";
+        }
     }
 
 

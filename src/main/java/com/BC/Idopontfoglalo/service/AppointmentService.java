@@ -83,7 +83,7 @@ public class AppointmentService {
 
     /**
      * Időpont lemondása (csak saját időpont)
-     */
+
     public void cancelAppointment(Long appointmentId) {
         Appointment appointment = getAppointmentById(appointmentId);
         User currentUser = getCurrentUser();
@@ -102,7 +102,7 @@ public class AppointmentService {
         appointment.setStatus(AppointmentStatus.CANCELLED);
         appointmentRepository.save(appointment);
     }
-
+     */
     /**
      * Időpont módosítása (csak saját időpont)
      */
@@ -394,5 +394,203 @@ public class AppointmentService {
         return result;
     }
 
+    // AppointmentService.java-ba hozzáadandó metódusok
 
+    /**
+     * Időpont foglalása felhasználó által
+     * @param timeSlotId - Az AvailableTimeSlot ID-ja
+     * @param username - A foglaló felhasználó neve
+     * @param notes - Opcionális megjegyzések
+     */
+    @Transactional
+    public void bookAppointment(Long timeSlotId, String username, String notes) {
+        // TimeSlot lekérése
+        AvailableTimeSlot timeSlot = availableTimeSlotRepository.findById(timeSlotId)
+                .orElseThrow(() -> new IllegalArgumentException("Nem található időpont slot: " + timeSlotId));
+
+        // Felhasználó lekérése
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Nem található felhasználó: " + username));
+
+        // Validációk
+        validateBookingRequest(timeSlot, user);
+
+        // Appointment létrehozása
+        Appointment appointment = new Appointment();
+        appointment.setTitle(timeSlot.getAppointmentType().getName());
+        appointment.setDescription(notes);
+        appointment.setAppointmentDate(timeSlot.getStartTime());
+        appointment.setDurationMinutes(timeSlot.getDurationMinutes());
+        appointment.setUser(user);
+        appointment.setAppointmentType(timeSlot.getAppointmentType());
+
+        // Status beállítása a típus alapján
+        if (timeSlot.getAppointmentType().isRequiresApproval()) {
+            appointment.setStatus(AppointmentStatus.PENDING);
+        } else {
+            appointment.setStatus(AppointmentStatus.CONFIRMED);
+        }
+
+        appointmentRepository.save(appointment);
+
+        // TimeSlot frissítése
+        timeSlot.setCurrentAttendees(timeSlot.getCurrentAttendees() + 1);
+
+        // Ha elérte a max létszámot, akkor FULL státuszra állítjuk
+        if (timeSlot.getCurrentAttendees() >= timeSlot.getMaxAttendees()) {
+            timeSlot.setStatus(TimeSlotStatus.FULL);
+        }
+
+        availableTimeSlotRepository.save(timeSlot);
+    }
+
+    /**
+     * Foglalási kérelem validálása
+     */
+    private void validateBookingRequest(AvailableTimeSlot timeSlot, User user) {
+        // TimeSlot elérhetőség ellenőrzése
+        if (timeSlot.getStatus() != TimeSlotStatus.AVAILABLE) {
+            throw new IllegalArgumentException("Ez az időpont már nem elérhető!");
+        }
+
+        // Múltbeli időpont ellenőrzése
+        if (timeSlot.getStartTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Múltbeli időpontra nem lehet foglalni!");
+        }
+
+        // Kapacitás ellenőrzése
+        if (timeSlot.getCurrentAttendees() >= timeSlot.getMaxAttendees()) {
+            throw new IllegalArgumentException("Ez az időpont már betelt!");
+        }
+
+        // Részleg aktivitás ellenőrzése
+        if (!timeSlot.getAppointmentType().getDepartment().isActive()) {
+            throw new IllegalArgumentException("Ez a részleg jelenleg nem aktív!");
+        }
+
+        // Időpont típus aktivitás ellenőrzése
+        if (!timeSlot.getAppointmentType().isActive()) {
+            throw new IllegalArgumentException("Ez az időpont típus jelenleg nem aktív!");
+        }
+
+        // Dupla foglalás ellenőrzése - ugyanaz a felhasználó, ugyanabban az időpontban
+        boolean hasConflict = appointmentRepository.existsByUserAndAppointmentDateBetweenAndStatusNot(
+                user,
+                timeSlot.getStartTime(),
+                timeSlot.getStartTime().plusMinutes(timeSlot.getDurationMinutes()),
+                AppointmentStatus.CANCELLED
+        );
+
+        if (hasConflict) {
+            throw new IllegalArgumentException("Már van foglalásod ebben az időszakban!");
+        }
+    }
+
+    /**
+     * Időpont lemondása - frissített verzió TimeSlot-okkal
+     */
+
+    @Transactional
+    public void cancelAppointment(Long appointmentId) {
+        Appointment appointment = getAppointmentById(appointmentId);
+        User currentUser = getCurrentUser();
+
+        // Jogosultság ellenőrzése
+        if (!appointment.getUser().getId().equals(currentUser.getId())) {
+            throw new IllegalArgumentException("Csak saját időpontot lehet lemondani!");
+        }
+
+        // Státusz ellenőrzése
+        if (appointment.getStatus() == AppointmentStatus.CANCELLED ||
+                appointment.getStatus() == AppointmentStatus.COMPLETED) {
+            throw new IllegalArgumentException("Ez az időpont már nem mondható le!");
+        }
+
+        // Lemondási határidő ellenőrzése (pl. 24 órával előtte)
+        if (appointment.getAppointmentDate().isBefore(LocalDateTime.now().plusHours(24))) {
+            throw new IllegalArgumentException("Az időpont lemondása csak 24 órával a kezdés előtt lehetséges!");
+        }
+
+        // Appointment lemondása
+        appointment.setStatus(AppointmentStatus.CANCELLED);
+        appointmentRepository.save(appointment);
+
+        // Kapcsolódó TimeSlot frissítése
+        updateTimeSlotAfterCancellation(appointment);
+    }
+
+    /**
+     * TimeSlot frissítése lemondás után
+     */
+    private void updateTimeSlotAfterCancellation(Appointment appointment) {
+        // Keresés a TimeSlot-ra
+        List<AvailableTimeSlot> timeSlots = availableTimeSlotRepository
+                .findByAppointmentTypeAndStartTime(
+                        appointment.getAppointmentType(),
+                        appointment.getAppointmentDate()
+                );
+
+        if (!timeSlots.isEmpty()) {
+            AvailableTimeSlot timeSlot = timeSlots.get(0);
+
+            // Résztvevők számának csökkentése
+            timeSlot.setCurrentAttendees(Math.max(0, timeSlot.getCurrentAttendees() - 1));
+
+            // Ha volt FULL, most AVAILABLE lehet
+            if (timeSlot.getStatus() == TimeSlotStatus.FULL) {
+                timeSlot.setStatus(TimeSlotStatus.AVAILABLE);
+            }
+
+            availableTimeSlotRepository.save(timeSlot);
+        }
+    }
+
+    /**
+     * Felhasználó jövőbeli időpontjai TimeSlot információkkal
+     */
+    public List<Appointment> getUserUpcomingAppointmentsWithDetails() {
+        User currentUser = getCurrentUser();
+        return appointmentRepository.findUpcomingAppointmentsByUserWithType(
+                currentUser,
+                LocalDateTime.now()
+        );
+    }
+
+    // AppointmentService.java-ba hozzáadandó segédmetódus
+
+    /**
+     * TimeSlot lekérése ID alapján
+     */
+    public AvailableTimeSlot getTimeSlotById(Long timeSlotId) {
+        return availableTimeSlotRepository.findById(timeSlotId)
+                .orElseThrow(() -> new IllegalArgumentException("Nem található időpont slot: " + timeSlotId));
+    }
+
+    /**
+     * Felhasználó mai időpontjai
+     */
+    public List<Appointment> getUserTodayAppointments() {
+        User currentUser = getCurrentUser();
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().atTime(23, 59, 59);
+
+        return appointmentRepository.findByUserAndAppointmentDateBetweenAndStatusNotOrderByAppointmentDateAsc(
+                currentUser, startOfDay, endOfDay, AppointmentStatus.CANCELLED
+        );
+    }
+
+    /**
+     * Dashboard statisztikák felhasználónak
+     */
+    public Map<String, Object> getUserDashboardStats() {
+        User currentUser = getCurrentUser();
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalAppointments", appointmentRepository.countByUser(currentUser));
+        stats.put("upcomingAppointments", appointmentRepository.countUpcomingByUser(currentUser, LocalDateTime.now()));
+        stats.put("todayAppointments", getUserTodayAppointments().size());
+        stats.put("pendingAppointments", appointmentRepository.countByUserAndStatus(currentUser, AppointmentStatus.PENDING));
+
+        return stats;
+    }
 }
