@@ -1,9 +1,8 @@
 package com.BC.Idopontfoglalo.service;
 
-import com.BC.Idopontfoglalo.entity.Appointment;
-import com.BC.Idopontfoglalo.entity.AppointmentStatus;
-import com.BC.Idopontfoglalo.entity.User;
+import com.BC.Idopontfoglalo.entity.*;
 import com.BC.Idopontfoglalo.repository.AppointmentRepository;
+import com.BC.Idopontfoglalo.repository.AvailableTimeSlotRepository;
 import com.BC.Idopontfoglalo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -11,9 +10,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalTime;
+import java.util.*;
 
 @Service
 @Transactional
@@ -25,13 +26,19 @@ public class AppointmentService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private AppointmentTypeService appointmentTypeService;
+
+    @Autowired
+    private AvailableTimeSlotRepository availableTimeSlotRepository;
+
     // ========== FELHASZNÁLÓI MŰVELETEK ==========
 
     /**
      * Új időpont létrehozása
      */
     public Appointment createAppointment(String title, String description,
-                                         LocalDateTime appointmentDate, Integer durationMinutes) {
+                                         LocalDateTime appointmentDate, Integer durationMinutes, AppointmentType appointmentType) {
         // Aktuális felhasználó lekérése
         User currentUser = getCurrentUser();
 
@@ -45,7 +52,7 @@ public class AppointmentService {
         }
 
         // Új időpont létrehozása
-        Appointment appointment = new Appointment(title, description, appointmentDate, durationMinutes, currentUser);
+        Appointment appointment = new Appointment(title, description, appointmentDate, durationMinutes, currentUser, appointmentType);
 
         return appointmentRepository.save(appointment);
     }
@@ -264,4 +271,128 @@ public class AppointmentService {
             throw new IllegalArgumentException("Az időtartam maximum 8 óra lehet!");
         }
     }
+
+    /**
+     * Count all appointments for a specific department
+     */
+    public long countByDepartment(Department department) {
+        return appointmentRepository.countByAppointmentType_Department(department);
+    }
+
+    /**
+     * Count pending appointments for a specific department
+     */
+    public long countPendingByDepartment(Department department) {
+        return appointmentRepository.countByAppointmentType_DepartmentAndStatus(
+                department,
+                AppointmentStatus.PENDING
+        );
+    }
+
+    /**
+     * Count upcoming appointments for a specific department
+     */
+    public long countUpcomingByDepartment(Department department) {
+        return appointmentRepository.countUpcomingByDepartment(
+                department,
+                LocalDateTime.now()
+        );
+    }
+
+    @Transactional
+    public void createBulkAppointments(Long appointmentTypeId, LocalDate startDate, LocalDate endDate,
+                                       LocalTime startTime, LocalTime endTime, Integer durationMinutes,
+                                       List<DayOfWeek> selectedDays) {
+
+        AppointmentType appointmentType = appointmentTypeService.getAppointmentTypeById(appointmentTypeId);
+
+        // Ellenőrizzük, hogy a részleg aktív-e
+        if (!appointmentType.getDepartment().isActive()) {
+            throw new IllegalArgumentException("Inaktív részleghez nem lehet időpontot létrehozni!");
+        }
+
+        LocalDate currentDate = startDate;
+        while (!currentDate.isAfter(endDate)) {
+            // Ellenőrizzük, hogy ez a nap szerepel-e a kiválasztott napok között
+            if (selectedDays.contains(currentDate.getDayOfWeek())) {
+                createAppointmentsForDay(appointmentType, currentDate, startTime, endTime, durationMinutes);
+            }
+            currentDate = currentDate.plusDays(1);
+        }
+    }
+
+    private void createAppointmentsForDay(AppointmentType appointmentType, LocalDate date,
+                                          LocalTime startTime, LocalTime endTime, Integer durationMinutes) {
+
+        LocalTime currentTime = startTime;
+
+        while (currentTime.plusMinutes(durationMinutes).isBefore(endTime) ||
+                currentTime.plusMinutes(durationMinutes).equals(endTime)) {
+
+            LocalDateTime appointmentDateTime = LocalDateTime.of(date, currentTime);
+
+            // Ellenőrizzük, hogy nincs-e már időpont ebben az időszakban
+            if (!hasConflictingAppointment(appointmentDateTime,
+                    appointmentDateTime.plusMinutes(durationMinutes))) {
+
+                // Üres időpont létrehozása (nincs hozzárendelve felhasználó)
+                AvailableTimeSlot timeSlot = new AvailableTimeSlot();
+                timeSlot.setAppointmentType(appointmentType);
+                timeSlot.setStartTime(appointmentDateTime);
+                timeSlot.setDurationMinutes(durationMinutes);
+                timeSlot.setMaxAttendees(appointmentType.getMaxParticipants());
+                timeSlot.setCurrentAttendees(0);
+                timeSlot.setStatus(TimeSlotStatus.AVAILABLE);
+
+                availableTimeSlotRepository.save(timeSlot);
+            }
+
+            currentTime = currentTime.plusMinutes(durationMinutes);
+        }
+    }
+
+    public Map<String, List<AppointmentSlotDTO>> getWeeklyAppointmentSlots(Long departmentId, LocalDate startDate) {
+        LocalDate endDate = startDate.plusDays(6);
+
+        List<AvailableTimeSlot> timeSlots = availableTimeSlotRepository
+                .findByAppointmentType_Department_IdAndStartTimeBetween(
+                        departmentId,
+                        startDate.atStartOfDay(),
+                        endDate.atTime(23, 59, 59)
+                );
+
+        Map<String, List<AppointmentSlotDTO>> result = new HashMap<>();
+
+        // Initialize all days
+        String[] days = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"};
+        for (String day : days) {
+            result.put(day, new ArrayList<>());
+        }
+
+        // Group by day of week
+        for (AvailableTimeSlot slot : timeSlots) {
+            DayOfWeek dayOfWeek = slot.getStartTime().getDayOfWeek();
+            String dayKey = dayOfWeek.name().toLowerCase();
+
+            AppointmentSlotDTO dto = new AppointmentSlotDTO();
+            dto.setId(slot.getId());
+            dto.setStartTime(slot.getStartTime());
+            dto.setEndTime(slot.getStartTime().plusMinutes(slot.getDurationMinutes()));
+            dto.setTypeName(slot.getAppointmentType().getName());
+            dto.setMaxAttendees(slot.getMaxAttendees());
+            dto.setCurrentAttendees(slot.getCurrentAttendees());
+            dto.setStatus(slot.getStatus().name());
+
+            result.get(dayKey).add(dto);
+        }
+
+        // Sort each day's appointments by time
+        for (List<AppointmentSlotDTO> daySlots : result.values()) {
+            daySlots.sort(Comparator.comparing(AppointmentSlotDTO::getStartTime));
+        }
+
+        return result;
+    }
+
+
 }

@@ -2,6 +2,7 @@ package com.BC.Idopontfoglalo.repository;
 
 import com.BC.Idopontfoglalo.entity.Appointment;
 import com.BC.Idopontfoglalo.entity.AppointmentStatus;
+import com.BC.Idopontfoglalo.entity.Department;
 import com.BC.Idopontfoglalo.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +14,17 @@ import java.util.List;
 
 @Repository
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
+
+    long countByAppointmentType_Department(Department department);
+
+    long countByAppointmentType_DepartmentAndStatus(Department department, AppointmentStatus status);
+
+    @Query("SELECT COUNT(a) FROM Appointment a " +
+            "WHERE a.appointmentType.department = :department " +
+            "AND a.appointmentDate >= :currentDate " +
+            "AND a.status = com.BC.Idopontfoglalo.entity.AppointmentStatus.CONFIRMED")
+    long countUpcomingByDepartment(@Param("department") Department department,
+                                   @Param("currentDate") LocalDateTime currentDate);
 
     // Egy adott felhasználó összes időpontja
     List<Appointment> findByUser(User user);
@@ -57,4 +69,17 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     // Függőben lévő időpontok száma (admin értesítéshez)
     long countByStatus(AppointmentStatus status);
+
+    // Új metódusok részleg szerinti statisztikákhoz
+    @Query("SELECT COUNT(a) FROM Appointment a WHERE a.appointmentType.department = :department")
+    long countByAppointmentTypeDepartment(@Param("department") Department department);
+
+    @Query("SELECT COUNT(a) FROM Appointment a WHERE a.appointmentType.department = :department AND a.status = :status")
+    long countByAppointmentTypeDepartmentAndStatus(@Param("department") Department department,
+                                                   @Param("status") AppointmentStatus status);
+
+    @Query("SELECT COUNT(a) FROM Appointment a WHERE a.appointmentType.department = :department AND a.appointmentDate > :date")
+    long countByAppointmentTypeDepartmentAndAppointmentDateAfter(@Param("department") Department department,
+                                                                 @Param("date") LocalDateTime date);
+
 }

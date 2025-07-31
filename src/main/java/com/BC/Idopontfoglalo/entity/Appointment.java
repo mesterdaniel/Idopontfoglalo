@@ -12,25 +12,28 @@ public class Appointment {
     private Long id;
 
     @Column(nullable = false)
-    private String title; // Az időpont címe/neve
+    private String title;
 
     @Column(length = 500)
-    private String description; // Részletes leírás
+    private String description;
 
     @Column(name = "appointment_date", nullable = false)
-    private LocalDateTime appointmentDate; // Mikor lesz az időpont
+    private LocalDateTime appointmentDate;
 
     @Column(name = "duration_minutes", nullable = false)
-    private Integer durationMinutes; // Mennyi ideig tart (percben)
+    private Integer durationMinutes;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AppointmentStatus status; // Az időpont állapota
+    private AppointmentStatus status;
 
-    // Kapcsolat a User entitással - ki foglalta le
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "appointment_type_id", nullable = false)
+    private AppointmentType appointmentType;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -38,23 +41,23 @@ public class Appointment {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Konstruktorok
     public Appointment() {
         this.createdAt = LocalDateTime.now();
         this.status = AppointmentStatus.PENDING;
     }
 
     public Appointment(String title, String description, LocalDateTime appointmentDate,
-                       Integer durationMinutes, User user) {
+                       Integer durationMinutes, User user, AppointmentType appointmentType) {
         this();
         this.title = title;
         this.description = description;
         this.appointmentDate = appointmentDate;
         this.durationMinutes = durationMinutes;
         this.user = user;
+        this.appointmentType = appointmentType;
     }
 
-    // Getterek és Setterek
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -112,6 +115,14 @@ public class Appointment {
         this.user = user;
     }
 
+    public AppointmentType getAppointmentType() {
+        return appointmentType;
+    }
+
+    public void setAppointmentType(AppointmentType appointmentType) {
+        this.appointmentType = appointmentType;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -128,7 +139,7 @@ public class Appointment {
         this.updatedAt = updatedAt;
     }
 
-    // Kényelmi metódusok
+    // Convenience methods
     public LocalDateTime getEndTime() {
         return appointmentDate.plusMinutes(durationMinutes);
     }
@@ -138,6 +149,14 @@ public class Appointment {
                 appointmentDate.isAfter(LocalDateTime.now());
     }
 
+    public Department getDepartment() {
+        return appointmentType != null ? appointmentType.getDepartment() : null;
+    }
+
+    public boolean requiresApproval() {
+        return appointmentType != null && appointmentType.isRequiresApproval();
+    }
+
     @Override
     public String toString() {
         return "Appointment{" +
@@ -145,7 +164,7 @@ public class Appointment {
                 ", title='" + title + '\'' +
                 ", appointmentDate=" + appointmentDate +
                 ", status=" + status +
+                ", appointmentType=" + (appointmentType != null ? appointmentType.getName() : "none") +
                 '}';
     }
 }
-

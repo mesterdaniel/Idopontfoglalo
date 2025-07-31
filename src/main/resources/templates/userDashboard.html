@@ -1,161 +1,183 @@
 <!DOCTYPE html>
-<html lang="hu" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Felhasználói Vezérlőpult</title>
+    <title>Időpontfoglalás</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* Általános stílusok */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
+        .department-card {
+            transition: all 0.3s;
+            cursor: pointer;
+            height: 100%;
         }
-
-        .container {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        /* Fejléc stílusok */
-        header {
-            background: linear-gradient(135deg, #2c3e50, #4ca1af);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 2.2rem;
-            font-weight: 600;
-        }
-
-        header p {
-            margin: 0.5rem 0 1.5rem;
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
-        /* Navigáció */
-        nav {
-            display: flex;
-            gap: 1.5rem;
-        }
-
-        nav a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            transition: all 0.3s ease;
-        }
-
-        nav a:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-
-        /* Tartalom */
-        main {
-            padding: 20px 0;
-        }
-
-        /* Kártya stílusok */
-        .card {
-            background: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-            margin-bottom: 1.5rem;
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        .card:hover {
+        .department-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
-
-        .card h2 {
-            margin-top: 0;
-            color: #2c3e50;
-            font-size: 1.4rem;
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 0.8rem;
-            margin-bottom: 1rem;
+        .department-card.selected {
+            border: 2px solid #007bff;
+            background-color: #f0f7ff;
         }
-
-        .card p {
-            color: #666;
-            margin-bottom: 1.5rem;
+        .department-image {
+            height: 120px;
+            object-fit: cover;
         }
-
-        .card a {
-            display: inline-block;
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            color: white;
-            text-decoration: none;
-            padding: 0.6rem 1.2rem;
-            border-radius: 4px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .card a:hover {
-            background: linear-gradient(135deg, #2980b9, #1a252f);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Animációk */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Reszponzív design */
-        @media (max-width: 768px) {
-            header {
-                padding: 1.5rem 0;
-            }
-
-            nav {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-
-            .container {
-                padding: 0 15px;
-            }
+        .next-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: none;
         }
     </style>
 </head>
 <body>
-<header>
-    <div class="container">
-        <h1>Felhasználói Vezérlőpult</h1>
-        <p>Üdvözöllek, <strong th:text="${username}">Felhasználó</strong>!</p>
-        <nav>
-            <a href="/">Kezdőlap</a>
-            <a href="/login">Kijelentkezés</a>
-        </nav>
-    </div>
-</header>
+<div class="container py-4">
+    <!-- Step 1: Department Selection -->
+    <div id="step1">
+        <h2 class="text-center mb-4">Válassza ki a részleget</h2>
 
-<main class="container">
-    <div class="card">
-        <h2>Foglalásaim</h2>
-        <p>Itt tudod kezelni a foglalásaidat és megtekinteni az időpontokat.</p>
-        <a href="/user/appointments">Foglalások megtekintése</a>
+        <!-- Search and Filter -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="departmentSearch" placeholder="Részleg keresése...">
+                    <button class="btn btn-outline-secondary" type="button" id="clearSearch">Törlés</button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="activeFilter" checked>
+                    <label class="form-check-label" for="activeFilter">Csak aktív részlegek</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Departments Grid -->
+        <div class="row" id="departmentsContainer">
+            <div th:each="dept : ${departments}" class="col-md-4 mb-4 department-item">
+                <div class="card department-card"
+                     th:data-id="${dept.id}"
+                     th:data-active="${dept.active}"
+                     th:data-name="${dept.name}"
+                     th:data-description="${dept.description}">
+                    <img th:src="${dept.imageUrl} ?: 'https://via.placeholder.com/300x120?text=Részleg'"
+                         class="card-img-top department-image" alt="Részleg képe">
+                    <div class="card-body">
+                        <h5 class="card-title" th:text="${dept.name}"></h5>
+                        <p class="card-text text-muted" th:text="${dept.description} ?: 'Nincs leírás'"></p>
+                        <div class="d-flex justify-content-between align-items-center">
+              <span class="badge"
+                    th:classappend="${dept.active} ? 'bg-success' : 'bg-secondary'"
+                    th:text="${dept.active} ? 'Aktív' : 'Inaktív'"></span>
+                            <span class="text-muted small" th:text="${dept.appointmentTypes.size()} + ' időpont típus'"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-warning d-none" id="noDepartmentsFound">
+            Nincs találat a keresési feltételeknek megfelelő részleg.
+        </div>
     </div>
-</main>
+
+    <!-- Next Button -->
+    <button id="nextButton" class="btn btn-primary btn-lg next-btn" onclick="proceedToAppointmentTypes()">
+        Tovább a szolgáltatásokhoz <i class="bi bi-arrow-right"></i>
+    </button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Department selection functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        let selectedDepartment = null;
+
+        // Department card selection
+        document.querySelectorAll('.department-card').forEach(card => {
+            card.addEventListener('click', function() {
+                // Remove selection from all cards
+                document.querySelectorAll('.department-card').forEach(c => {
+                    c.classList.remove('selected');
+                });
+
+                // Add selection to clicked card
+                this.classList.add('selected');
+                selectedDepartment = {
+                    id: this.getAttribute('data-id'),
+                    name: this.getAttribute('data-name'),
+                    description: this.getAttribute('data-description')
+                };
+
+                // Show next button
+                document.getElementById('nextButton').style.display = 'block';
+            });
+        });
+
+        // Search functionality
+        document.getElementById('departmentSearch').addEventListener('input', function() {
+            filterDepartments();
+        });
+
+        // Active filter
+        document.getElementById('activeFilter').addEventListener('change', function() {
+            filterDepartments();
+        });
+
+        // Clear search
+        document.getElementById('clearSearch').addEventListener('click', function() {
+            document.getElementById('departmentSearch').value = '';
+            filterDepartments();
+        });
+    });
+
+    function filterDepartments() {
+        const searchTerm = document.getElementById('departmentSearch').value.toLowerCase();
+        const showOnlyActive = document.getElementById('activeFilter').checked;
+        let visibleCount = 0;
+
+        document.querySelectorAll('.department-item').forEach(item => {
+            const card = item.querySelector('.department-card');
+            const name = card.getAttribute('data-name').toLowerCase();
+            const description = card.getAttribute('data-description').toLowerCase();
+            const isActive = card.getAttribute('data-active') === 'true';
+
+            const matchesSearch = name.includes(searchTerm) || description.includes(searchTerm);
+            const matchesActiveFilter = !showOnlyActive || isActive;
+
+            if (matchesSearch && matchesActiveFilter) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        // Show/hide no results message
+        document.getElementById('noDepartmentsFound').classList.toggle('d-none', visibleCount > 0);
+    }
+
+    function proceedToAppointmentTypes() {
+        const selectedCard = document.querySelector('.department-card.selected');
+        if (!selectedCard) {
+            alert('Kérem válasszon egy részleget!');
+            return;
+        }
+
+        // In a real application, you would redirect or load the next step
+        // For example:
+        // window.location.href = `/appointment-types?departmentId=${selectedDepartment.id}`;
+
+        console.log('Selected department:', {
+            id: selectedCard.getAttribute('data-id'),
+            name: selectedCard.getAttribute('data-name')
+        });
+
+        alert('Átirányítás a szolgáltatások választójához...');
+    }
+</script>
 </body>
 </html>

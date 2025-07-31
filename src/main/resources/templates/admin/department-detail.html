@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${department.name} + ' | Admin'">Részleg | Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .admin-badge {
+      background-color: #6f42c1;
+    }
+    .appointment-type-badge {
+      background-color: #17a2b8;
+    }
+    .calendar-day {
+      min-height: 120px;
+      border: 1px solid #dee2e6;
+    }
+    .calendar-header {
+      background-color: #f8f9fa;
+      font-weight: bold;
+    }
+    .time-slot {
+      padding: 5px;
+      margin: 2px 0;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+    .available-slot {
+      background-color: #d4edda;
+      cursor: pointer;
+    }
+    .booked-slot {
+      background-color: #f8d7da;
+    }
+    .day-label {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 th:text="${department.name}"></h1>
+      <p class="text-muted" th:text="${department.description} ?: 'Nincs leírás'"></p>
+    </div>
+    <div>
+      <span class="badge" th:classappend="${department.active} ? 'bg-success' : 'bg-secondary'"
+            th:text="${department.active} ? 'Aktív' : 'Inaktív'"></span>
+    </div>
+  </div>
+
+  <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+  <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">Adminisztrátorok</h5>
+        </div>
+        <div class="card-body">
+          <div th:if="${department.departmentAdmins.isEmpty}" class="text-muted">Nincs admin hozzárendelve</div>
+          <ul th:unless="${department.departmentAdmins.isEmpty}" class="list-group list-group-flush">
+            <li th:each="admin : ${department.departmentAdmins}"
+                class="list-group-item d-flex justify-content-between align-items-center">
+              <span th:text="${admin.username}"></span>
+              <form th:action="@{/admin/departments/{id}/remove-admin/{adminId}(id=${department.id}, adminId=${admin.id})}"
+                    method="post">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Eltávolítás</button>
+              </form>
+            </li>
+          </ul>
+
+          <hr>
+
+          <h6>Új admin hozzáadása</h6>
+          <form th:action="@{/admin/departments/{id}/assign-admin(id=${department.id})}" method="post" class="row g-2">
+            <div class="col-md-8">
+              <input type="text" class="form-control" name="username" placeholder="Felhasználónév" required>
+            </div>
+            <div class="col-md-4">
+              <button type="submit" class="btn btn-primary w-100">Hozzárendelés</button>
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="createNew" id="createNew">
+                <label class="form-check-label" for="createNew">
+                  Új felhasználó létrehozása
+                </label>
+              </div>
+            </div>
+            <div class="col-12" id="passwordField" style="display: none;">
+              <input type="password" class="form-control" name="password" placeholder="Jelszó">
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">Időpont típusok</h5>
+          <a th:href="@{/admin/departments/{id}/new-type(id=${department.id})}"
+             class="btn btn-sm btn-primary">➕ Új típus</a>
+        </div>
+        <div class="card-body">
+          <div th:if="${department.appointmentTypes.isEmpty}" class="text-muted">Nincs időpont típus</div>
+          <ul th:unless="${department.appointmentTypes.isEmpty}" class="list-group list-group-flush">
+            <li th:each="type : ${department.appointmentTypes}"
+                class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <span th:text="${type.name}"></span>
+                <small class="text-muted d-block" th:text="${type.description}"></small>
+              </div>
+              <span class="badge appointment-type-badge"
+                    th:text="${type.active} ? 'Aktív' : 'Inaktív'"></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Appointment Creation Form -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5>Új időpontok sorozatos létrehozása</h5>
+    </div>
+    <div class="card-body">
+      <form th:action="@{/admin/departments/{id}/create-appointments(id=${department.id})}" method="post">
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label for="appointmentType" class="form-label">Időpont típus</label>
+            <select class="form-select" id="appointmentType" name="appointmentTypeId" required>
+              <option value="" selected disabled>Válassz típust</option>
+              <option th:each="type : ${department.appointmentTypes}"
+                      th:value="${type.id}"
+                      th:text="${type.name}"
+                      th:disabled="${!type.active}"></option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label for="startDate" class="form-label">Kezdő dátum</label>
+            <input type="date" class="form-control" id="startDate" name="startDate" required>
+          </div>
+          <div class="col-md-4">
+            <label for="endDate" class="form-label">Vég dátum (opcionális)</label>
+            <input type="date" class="form-control" id="endDate" name="endDate">
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label for="startTime" class="form-label">Kezdő időpont</label>
+            <input type="time" class="form-control" id="startTime" name="startTime" required>
+          </div>
+          <div class="col-md-4">
+            <label for="endTime" class="form-label">Vég időpont</label>
+            <input type="time" class="form-control" id="endTime" name="endTime" required>
+          </div>
+          <div class="col-md-4">
+            <label for="duration" class="form-label">Időtartam (perc)</label>
+            <select class="form-select" id="duration" name="duration" required>
+              <option value="15">15 perc</option>
+              <option value="30" selected>30 perc</option>
+              <option value="45">45 perc</option>
+              <option value="60">60 perc</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Napok kiválasztása</label>
+          <div class="d-flex flex-wrap gap-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="selectedDays" value="MONDAY" id="monday">
+              <label class="form-check-label" for="monday">Hétfő</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="selectedDays" value="TUESDAY" id="tuesday">
+              <label class="form-check-label" for="tuesday">Kedd</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="selectedDays" value="WEDNESDAY" id="wednesday">
+              <label class="form-check-label" for="wednesday">Szerda</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="selectedDays" value="THURSDAY" id="thursday">
+              <label class="form-check-label" for="thursday">Csütörtök</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="selectedDays" value="FRIDAY" id="friday">
+              <label class="form-check-label" for="friday">Péntek</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="selectedDays" value="SATURDAY" id="saturday">
+              <label class="form-check-label" for="saturday">Szombat</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="selectedDays" value="SUNDAY" id="sunday">
+              <label class="form-check-label" for="sunday">Vasárnap</label>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Időpontok létrehozása</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Weekly Calendar View -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Heti naptár</h5>
+      <div>
+        <button id="prevWeek" class="btn btn-sm btn-outline-secondary">← Előző hét</button>
+        <span id="weekRange" class="mx-2">Loading...</span>
+        <button id="nextWeek" class="btn btn-sm btn-outline-secondary">Következő hét →</button>
+      </div>
+    </div>
+    <div class="card-body" id="calendarContainer">
+      <div class="row">
+        <div class="col calendar-day p-3">
+          <div class="day-label">Hétfő <span class="text-muted" id="monday-date">-</span></div>
+          <div id="monday-slots" class="time-slots">
+            <div class="text-muted">Betöltés...</div>
+          </div>
+        </div>
+        <div class="col calendar-day p-3">
+          <div class="day-label">Kedd <span class="text-muted" id="tuesday-date">-</span></div>
+          <div id="tuesday-slots" class="time-slots">
+            <div class="text-muted">Betöltés...</div>
+          </div>
+        </div>
+        <div class="col calendar-day p-3">
+          <div class="day-label">Szerda <span class="text-muted" id="wednesday-date">-</span></div>
+          <div id="wednesday-slots" class="time-slots">
+            <div class="text-muted">Betöltés...</div>
+          </div>
+        </div>
+        <div class="col calendar-day p-3">
+          <div class="day-label">Csütörtök <span class="text-muted" id="thursday-date">-</span></div>
+          <div id="thursday-slots" class="time-slots">
+            <div class="text-muted">Betöltés...</div>
+          </div>
+        </div>
+        <div class="col calendar-day p-3">
+          <div class="day-label">Péntek <span class="text-muted" id="friday-date">-</span></div>
+          <div id="friday-slots" class="time-slots">
+            <div class="text-muted">Betöltés...</div>
+          </div>
+        </div>
+        <div class="col calendar-day p-3">
+          <div class="day-label">Szombat <span class="text-muted" id="saturday-date">-</span></div>
+          <div id="saturday-slots" class="time-slots">
+            <div class="text-muted">Betöltés...</div>
+          </div>
+        </div>
+        <div class="col calendar-day p-3">
+          <div class="day-label">Vasárnap <span class="text-muted" id="sunday-date">-</span></div>
+          <div id="sunday-slots" class="time-slots">
+            <div class="text-muted">Betöltés...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <a th:href="@{/admin/departments/{id}/edit(id=${department.id})}" class="btn btn-outline-primary">Szerkesztés</a>
+    <form th:action="@{/admin/departments/{id}/delete(id=${department.id})}" method="post">
+      <button type="submit" class="btn btn-outline-danger"
+              th:disabled="${!department.appointmentTypes.isEmpty || !department.departmentAdmins.isEmpty}"
+              onclick="return confirm('Biztosan törlöd ezt a részleget?')">
+        Törlés
+      </button>
+    </form>
+    <a href="/admin/departments" class="btn btn-outline-secondary ms-auto">Vissza a listához</a>
+  </div>
+</div>
+
+<script>
+  // Globális változók
+  const departmentId = /*[[${department.id}]]*/ 1;
+
+  document.getElementById('createNew').addEventListener('change', function() {
+    document.getElementById('passwordField').style.display = this.checked ? 'block' : 'none';
+  });
+
+  // Calendar functionality
+  let currentWeekStart = new Date();
+  currentWeekStart.setDate(currentWeekStart.getDate() - (currentWeekStart.getDay() === 0 ? 6 : currentWeekStart.getDay() - 1));
+
+  function updateCalendar() {
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const date = new Date(currentWeekStart);
+
+    // Update date labels
+    days.forEach((day, index) => {
+      const dayDate = new Date(date);
+      dayDate.setDate(date.getDate() + index);
+      const dayElement = document.getElementById(`${day}-date`);
+      if (dayElement) {
+        dayElement.textContent = `${dayDate.getDate()}.`;
+      }
+    });
+
+    // Update week range display
+    const startDate = new Date(date);
+    const endDate = new Date(date);
+    endDate.setDate(date.getDate() + 6);
+
+    const weekRangeElement = document.getElementById('weekRange');
+    if (weekRangeElement) {
+      weekRangeElement.textContent =
+              `${startDate.getFullYear()}.${(startDate.getMonth()+1).toString().padStart(2, '0')}.${startDate.getDate().toString().padStart(2, '0')} - ` +
+              `${endDate.getFullYear()}.${(endDate.getMonth()+1).toString().padStart(2, '0')}.${endDate.getDate().toString().padStart(2, '0')}`;
+    }
+
+    // Load appointments for this week
+    loadWeeklyAppointments();
+  }
+
+  function loadWeeklyAppointments() {
+    const container = document.getElementById('calendarContainer');
+    if (container) {
+      container.classList.add('loading');
+    }
+
+    // Format date for API call
+    const startDateStr = currentWeekStart.toISOString().split('T')[0];
+
+    fetch(`/admin/departments/${departmentId}/appointments/weekly?startDate=${startDateStr}`)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Network response was not ok');
+              }
+              return response.json();
+            })
+            .then(data => {
+              displayAppointments(data);
+            })
+            .catch(error => {
+              console.error('Error loading appointments:', error);
+              displayError('Hiba történt az időpontok betöltésekor');
+            })
+            .finally(() => {
+              if (container) {
+                container.classList.remove('loading');
+              }
+            });
+  }
+
+  function displayAppointments(appointmentsByDay) {
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+    days.forEach(day => {
+      const container = document.getElementById(`${day}-slots`);
+      if (!container) return;
+
+      container.innerHTML = '';
+
+      const dayAppointments = appointmentsByDay[day] || [];
+
+      if (dayAppointments.length === 0) {
+        const noSlots = document.createElement('div');
+        noSlots.className = 'text-muted text-center py-3';
+        noSlots.textContent = 'Nincs időpont';
+        container.appendChild(noSlots);
+        return;
+      }
+
+      dayAppointments.forEach(appointment => {
+        const slot = document.createElement('div');
+        slot.className = `time-slot ${appointment.status === 'AVAILABLE' ? 'available-slot' : 'booked-slot'}`;
+
+        const startTime = new Date(appointment.startTime).toLocaleTimeString('hu-HU', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        const endTime = new Date(appointment.endTime).toLocaleTimeString('hu-HU', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        slot.innerHTML = `
+          <div>${startTime} - ${endTime}</div>
+          <small>${appointment.typeName}</small>
+          <small class="d-block">${appointment.currentAttendees}/${appointment.maxAttendees}</small>
+        `;
+
+        if (appointment.status === 'AVAILABLE') {
+          slot.style.cursor = 'pointer';
+          slot.addEventListener('click', () => {
+            // Itt lehet majd időpont részleteit mutatni vagy szerkeszteni
+            console.log('Clicked appointment:', appointment);
+          });
+        }
+
+        container.appendChild(slot);
+      });
+    });
+  }
+
+  function displayError(message) {
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    days.forEach(day => {
+      const container = document.getElementById(`${day}-slots`);
+      if (container) {
+        container.innerHTML = `<div class="text-danger text-center py-3">${message}</div>`;
+      }
+    });
+  }
+
+  // Event listeners
+  document.getElementById('prevWeek')?.addEventListener('click', () => {
+    currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+    updateCalendar();
+  });
+
+  document.getElementById('nextWeek')?.addEventListener('click', () => {
+    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    updateCalendar();
+  });
+
+  // Form validation
+  document.getElementById('endDate')?.addEventListener('change', function() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = this.value;
+
+    if (startDate && endDate && endDate < startDate) {
+      alert('A vég dátum nem lehet korábbi a kezdő dátumnál!');
+      this.value = '';
+    }
+  });
+
+  // Initialize calendar on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    updateCalendar();
+  });
+</script>
+</body>
+</html>
