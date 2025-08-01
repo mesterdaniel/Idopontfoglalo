@@ -1,6 +1,7 @@
 package com.BC.Idopontfoglalo.controller;
 
 import com.BC.Idopontfoglalo.entity.AppointmentSlotDTO;
+import com.BC.Idopontfoglalo.entity.AppointmentType;
 import com.BC.Idopontfoglalo.entity.Department;
 import com.BC.Idopontfoglalo.entity.User;
 import com.BC.Idopontfoglalo.service.AppointmentService;
@@ -71,6 +72,74 @@ public class DepartmentAdminController {
             model.addAttribute("error", "Hiba történt: " + e.getMessage());
             return "redirect:/department-admin/dashboard";
         }
+    }
+
+    @GetMapping("/departments/{departmentId}/edit-type/{typeId}")
+    public String showEditAppointmentTypeForm(
+            @PathVariable Long departmentId,
+            @PathVariable Long typeId,
+            Model model,
+            Authentication authentication) {
+
+        try {
+            Department currentDepartment = departmentService.getCurrentUserManagedDepartment();
+            if (!currentDepartment.getId().equals(departmentId)) {
+                return "redirect:/department-admin/dashboard?error=Nem+van+jogosultságod+ehhez+a+részleghez";
+            }
+
+            AppointmentType appointmentType = appointmentTypeService.getAppointmentTypeById(typeId);
+            if (!appointmentType.getDepartment().getId().equals(departmentId)) {
+                return "redirect:/department-admin/departments/" + departmentId + "?error=Nem+található+az+időpont+típus";
+            }
+
+            model.addAttribute("department", currentDepartment);
+            model.addAttribute("appointmentType", appointmentType);
+            model.addAttribute("username", authentication.getName());
+
+            return "department-admin/edit-appointment-type";
+
+        } catch (Exception e) {
+            return "redirect:/department-admin/departments/" + departmentId + "?error=" + e.getMessage();
+        }
+    }
+
+    @PostMapping("/{departmentId}/update-appointment-type/{typeId}")
+    public String updateAppointmentType(
+            @PathVariable Long departmentId,
+            @PathVariable Long typeId,
+            @RequestParam String name,
+            @RequestParam String description,
+            @RequestParam Integer defaultDurationMinutes,
+            @RequestParam Integer maxParticipants,
+            @RequestParam(required = false) Integer bufferMinutes,
+            @RequestParam(defaultValue = "true") boolean requiresApproval,
+            @RequestParam(defaultValue = "true") boolean active,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            Department currentDepartment = departmentService.getCurrentUserManagedDepartment();
+            if (!currentDepartment.getId().equals(departmentId)) {
+                redirectAttributes.addFlashAttribute("error", "Nem van jogosultságod ehhez a részleghez");
+                return "redirect:/department-admin/dashboard";
+            }
+
+            appointmentTypeService.updateAppointmentType(
+                    typeId,
+                    name,
+                    description,
+                    defaultDurationMinutes,
+                    maxParticipants,
+                    bufferMinutes != null ? bufferMinutes : 0,
+                    requiresApproval,
+                    active
+            );
+
+            redirectAttributes.addFlashAttribute("success", "Időpont típus sikeresen frissítve!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Hiba történt: " + e.getMessage());
+        }
+
+        return "redirect:/department-admin/departments/" + departmentId;
     }
 
     @PostMapping("/update")
