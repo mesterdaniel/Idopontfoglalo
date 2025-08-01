@@ -70,4 +70,6 @@ public interface AppointmentTypeRepository extends JpaRepository<AppointmentType
             "GROUP BY at.maxParticipants")
     Optional<Integer> getAvailableSlotsAtDateTime(@Param("appointmentType") AppointmentType appointmentType,
                                                   @Param("dateTime") LocalDateTime dateTime);
+
+    Optional<AppointmentType> findById(Long id);
 }
