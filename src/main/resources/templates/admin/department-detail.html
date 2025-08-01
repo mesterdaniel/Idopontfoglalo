@@ -43,7 +43,7 @@
     }
   </style>
 </head>
-<body>
+<body th:data-department-id="${pathvariable}">
 <div class="container py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -289,7 +289,7 @@
 
 <script>
   // Globális változók
-  const departmentId = /*[[${department.id}]]*/ 1;
+  const departmentId = document.body.getAttribute("data-department-id");
 
   document.getElementById('createNew').addEventListener('change', function() {
     document.getElementById('passwordField').style.display = this.checked ? 'block' : 'none';
