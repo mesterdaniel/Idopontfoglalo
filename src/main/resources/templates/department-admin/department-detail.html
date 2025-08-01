@@ -69,6 +69,28 @@
             <i class="fas fa-calendar-plus fa-2x mb-2 d-block"></i>
             Nincs időpont típus
           </div>
+
+          <li th:each="type : ${department.appointmentTypes}"
+              class="list-group-item d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+              <h6 th:text="${type.name}" class="mb-1"></h6>
+              <p class="text-muted mb-1" th:text="${type.description}"></p>
+              <small class="text-muted">
+                <i class="fas fa-clock"></i> <span th:text="${type.defaultDurationMinutes}">30</span> perc |
+                <i class="fas fa-users"></i> Max <span th:text="${type.maxParticipants}">1</span> fő
+              </small>
+            </div>
+            <div class="d-flex flex-column align-items-end">
+    <span class="badge appointment-type-badge mb-1"
+          th:classappend="${type.active} ? 'bg-success' : 'bg-secondary'"
+          th:text="${type.active} ? 'Aktív' : 'Inaktív'"></span>
+              <a th:href="@{/department-admin/departments/{departmentId}/edit-type/{typeId}(departmentId=${department.id}, typeId=${type.id})}"
+                 class="btn btn-sm btn-outline-primary">Szerkesztés</a>
+            </div>
+          </li>
+
+
+          <!--
           <ul th:unless="${department.appointmentTypes.isEmpty}" class="list-group list-group-flush">
             <li th:each="type : ${department.appointmentTypes}"
                 class="list-group-item d-flex justify-content-between align-items-start">
@@ -84,6 +106,8 @@
                     th:text="${type.active} ? 'Aktív' : 'Inaktív'"></span>
             </li>
           </ul>
+          -->
+
         </div>
       </div>
     </div>
