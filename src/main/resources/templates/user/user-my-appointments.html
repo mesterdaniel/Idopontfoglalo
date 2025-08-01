@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Időpontjaim | Időpontfoglalás</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .navbar-custom {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .appointment-card {
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .appointment-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        .status-pending {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border-left: 4px solid #ffc107;
+        }
+        .status-confirmed {
+            background: linear-gradient(135deg, #d4edda 0%, #00b894 100%);
+            border-left: 4px solid #28a745;
+        }
+        .status-cancelled {
+            background: linear-gradient(135deg, #f8d7da 0%, #e17055 100%);
+            border-left: 4px solid #dc3545;
+        }
+        .status-completed {
+            background: linear-gradient(135deg, #e2e3e5 0%, #636e72 100%);
+            border-left: 4px solid #6c757d;
+        }
+        .upcoming-appointment {
+            border: 2px solid #007bff;
+            box-shadow: 0 0 20px rgba(0, 123, 255, 0.2);
+        }
+        .filter-tabs {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-custom">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-primary" href="/appointments">
+            <i class="fas fa-calendar-check me-2"></i>Időpontfoglalás
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/appointments">Részlegek</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/appointments/my-appointments">Időpontjaim</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user me-1"></i><span th:text="${username}">Felhasználó</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/appointments/my-appointments">
+                            <i class="fas fa-calendar me-2"></i>Időpontjaim
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/login">
+                            <i class="fas fa-sign-out-alt me-2"></i>Kijelentkezés
+                        </a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/appointments" class="text-decoration-none">
+                    <i class="fas fa-home me-1"></i>Főoldal
+                </a>
+            </li>
+            <li class="breadcrumb-item active">Időpontjaim</li>
+        </ol>
+    </nav>
+
+    <!-- Fejléc -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="bg-primary bg-opacity-10 rounded p-4">
+                <h1 class="h2 mb-2">
+                    <i class="fas fa-calendar-alt me-2"></i>Időpontjaim
+                </h1>
+                <p class="text-muted mb-0">Itt tekintheti meg és kezelheti meglévő időpontjait</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Üzenetek -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i><span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Szűrő fülек -->
+    <div class="filter-tabs">
+        <ul class="nav nav-pills nav-fill p-3" id="appointmentTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="all-tab" data-bs-toggle="pill" data-bs-target="#all" type="button" role="tab">
+                    <i class="fas fa-list me-1"></i>Összes
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="upcoming-tab" data-bs-toggle="pill" data-bs-target="#upcoming" type="button" role="tab">
+                    <i class="fas fa-clock me-1"></i>Jövőbeliek
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pending-tab" data-bs-toggle="pill" data-bs-target="#pending" type="button" role="tab">
+                    <i class="fas fa-hourglass-half me-1"></i>Függőben
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="completed-tab" data-bs-toggle="pill" data-bs-target="#completed" type="button" role="tab">
+                    <i class="fas fa-check-circle me-1"></i>Lezártak
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Időpontok listája -->
+    <div class="tab-content" id="appointmentTabsContent">
+        <div class="tab-pane fade show active" id="all" role="tabpanel">
+            <div th:if="${appointments != null and !appointments.empty}">
+                <div class="row">
+                    <div th:each="appointment : ${appointments}" class="col-lg-6 col-xl-4 mb-4">
+                        <div class="card appointment-card h-100"
+                             th:classappend="${appointment.appointmentDate.isAfter(T(java.time.LocalDateTime).now())} ? 'upcoming-appointment' : ''"
+                             th:attrappend="class=${' status-' + #strings.toLowerCase(appointment.status)}">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title mb-0" th:text="${appointment.title}">
+                                        Időpont címe
+                                    </h5>
+                                    <span class="badge"
+                                          th:classappend="${appointment.status == 'PENDING'} ? 'bg-warning' : (${appointment.status == 'CONFIRMED'} ? 'bg-success' : (${appointment.status == 'CANCELLED'} ? 'bg-danger' : 'bg-secondary'))"
+                                          th:text="${appointment.status.getDisplayName()}">
+                                            Állapot
+                                        </span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-building text-muted me-2"></i>
+                                        <span th:text="${appointment.getDepartment() != null ? appointment.getDepartment().getName() : 'N/A'}">Részleg</span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-calendar text-muted me-2"></i>
+                                        <span th:text="${#temporals.format(appointment.appointmentDate, 'yyyy. MM. dd. (EEEE)', #locale)}">
+                                                Dátum
+                                            </span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-clock text-muted me-2"></i>
+                                        <span th:text="${#temporals.format(appointment.appointmentDate, 'HH:mm')} + ' - ' + ${#temporals.format(appointment.getEndTime(), 'HH:mm')}">
+                                                Időpont
+                                            </span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-stopwatch text-muted me-2"></i>
+                                        <span th:text="${appointment.durationMinutes} + ' perc'">Időtartam</span>
+                                    </div>
+                                </div>
+
+                                <div th:if="${appointment.description}" class="mb-3">
+                                    <small class="text-muted">Leírás:</small>
+                                    <p class="small mb-0" th:text="${appointment.description}">Leírás szövege</p>
+                                </div>
+
+                                <div class="mt-auto">
+                                    <div th:if="${appointment.status == 'CONFIRMED' and appointment.appointmentDate.isAfter(T(java.time.LocalDateTime).now())}" class="d-grid">
+                                        <button class="btn btn-outline-danger btn-sm"
+                                                th:onclick="|confirmCancel(${appointment.id}, '${appointment.title}')|">
+                                            <i class="fas fa-times me-1"></i>Lemondás
+                                        </button>
+                                    </div>
+                                    <div th:if="${appointment.status == 'PENDING'}" class="d-grid gap-2">
+                                        <small class="text-muted text-center">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Adminisztrátori jóváhagyásra vár
+                                        </small>
+                                        <button class="btn btn-outline-danger btn-sm"
+                                                th:onclick="|confirmCancel(${appointment.id}, '${appointment.title}')|">
+                                            <i class="fas fa-times me-1"></i>Lemondás
+                                        </button>
+                                    </div>
+                                    <div th:if="${appointment.appointmentDate.isBefore(T(java.time.LocalDateTime).now()) and appointment.status == 'CONFIRMED'}" class="text-center">
+                                        <small class="text-muted">
+                                            <i class="fas fa-check-circle me-1"></i>Lezárt időpont
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Időpont közeledésének jelzése -->
+                            <div th:if="${appointment.appointmentDate.isAfter(T(java.time.LocalDateTime).now()) and appointment.appointmentDate.isBefore(T(java.time.LocalDateTime).now().plusDays(1))}"
+                                 class="card-footer bg-info bg-opacity-10 text-center">
+                                <small class="text-info fw-bold">
+                                    <i class="fas fa-bell me-1"></i>
+                                    Hamarosan esedékes!
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ha nincs időpont -->
+            <div th:if="${appointments == null or appointments.empty}" class="text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-calendar-times fa-5x text-muted"></i>
+                </div>
+                <h3 class="text-muted">Még nincs foglalt időpontja</h3>
+                <p class="text-muted mb-4">Foglaljon időpontot az alábbi gombra kattintva</p>
+                <a href="/appointments" class="btn btn-primary btn-lg">
+                    <i class="fas fa-calendar-plus me-2"></i>Időpont foglalása
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gyors műveletek -->
+    <div th:if="${appointments != null and !appointments.empty}" class="card mt-4">
+        <div class="card-body text-center">
+            <h6 class="mb-3">Gyors műveletek</h6>
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <a href="/appointments" class="btn btn-primary">
+                    <i class="fas fa-calendar-plus me-1"></i>Új időpont foglalása
+                </a>
+                <button class="btn btn-outline-secondary" onclick="window.print()">
+                    <i class="fas fa-print me-1"></i>Nyomtatás
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Confirmation Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Időpont lemondása
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Biztosan le szeretné mondani az alábbi időpontot?</p>
+                <div class="alert alert-warning">
+                    <strong id="appointmentToCancel">Időpont részletei</strong>
+                </div>
+                <p class="text-muted small mb-0">
+                    <i class="fas fa-info-circle me-1"></i>
+                    A lemondott időpont újra elérhetővé válik mások számára.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Mégsem</button>
+                <form id="cancelForm" method="post" style="display: inline;">
+                    <input type="hidden" name="_csrf" th:value="${_csrf.token}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times me-1"></i>Lemondás megerősítése
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let cancelModal;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        cancelModal = new bootstrap.Modal(document.getElementById('cancelModal'));
+
+        // Tab szűrés implementálása
+        implementTabFiltering();
+    });
+
+    function confirmCancel(appointmentId, appointmentName) {
+        document.getElementById('appointmentToCancel').textContent = appointmentName;
+        document.getElementById('cancelForm').action = `/appointments/cancel/${appointmentId}`;
+        cancelModal.show();
+    }
+
+    function implementTabFiltering() {
+        const tabButtons = document.querySelectorAll('#appointmentTabs button[data-bs-toggle="pill"]');
+        const tabContents = document.querySelectorAll('.tab-pane');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('shown.bs.tab', function (event) {
+                const targetId = event.target.getAttribute('data-bs-target');
+
+                tabContents.forEach(tab => {
+                    if (tab.id === targetId.replace('#', '')) {
+                        tab.classList.add('show', 'active');
+                    } else {
+                        tab.classList.remove('show', 'active');
+                    }
+                });
+            });
+        });
+    }
+</script>
+</body>
+</html>

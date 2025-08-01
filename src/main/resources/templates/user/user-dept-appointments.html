@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title th:text="${department.name} + ' | Időpontfoglalás'">Időpontfoglalás</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .navbar-custom {
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .calendar-day {
+            min-height: 200px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .time-slot {
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .available-slot {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border: 1px solid #b8dacd;
+            color: #155724;
+        }
+        .available-slot:hover {
+            background: linear-gradient(135deg, #c3e6cb 0%, #b8dacd 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
+        }
+        .booked-slot {
+            background: #f8d7da;
+            border: 1px solid #f1aeb5;
+            color: #721c24;
+            cursor: default;
+        }
+        .full-slot {
+            background: #e2e3e5;
+            border: 1px solid #d6d8db;
+            color: #6c757d;
+            cursor: default;
+        }
+        .day-label {
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .appointment-info {
+            font-size: 0.85rem;
+        }
+        .type-filter {
+            margin-bottom: 20px;
+        }
+        .week-navigation {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar navbar-expand-lg navbar-custom">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-primary" href="/appointments">
+            <i class="fas fa-calendar-check me-2"></i>Időpontfoglalás
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/appointments">Részlegek</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/appointments/my-appointments">Időpontjaim</a>
+                </li>
+            </ul>
+            <ul class="navbar-nav">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user me-1"></i><span th:text="${username}">Felhasználó</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="/appointments/my-appointments">
+                            <i class="fas fa-calendar me-2"></i>Időpontjaim
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/login">
+                            <i class="fas fa-sign-out-alt me-2"></i>Kijelentkezés
+                        </a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/appointments" class="text-decoration-none">
+                    <i class="fas fa-home me-1"></i>Főoldal
+                </a>
+            </li>
+            <li class="breadcrumb-item active" th:text="${department.name}">Részleg</li>
+        </ol>
+    </nav>
+
+    <!-- Fejléc -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="bg-primary bg-opacity-10 rounded p-4">
+                <h1 class="h2 mb-2" th:text="${department.name}">Részleg neve</h1>
+                <p class="text-muted mb-3" th:text="${department.description} ?: 'Nincs leírás'"></p>
+                <div class="d-flex align-items-center">
+                        <span class="badge bg-success me-2">
+                            <i class="fas fa-check-circle me-1"></i>Aktív
+                        </span>
+                    <small class="text-muted">
+                        <i class="fas fa-list me-1"></i>
+                        <span th:text="${appointmentTypes.size()}">0</span> elérhető szolgáltatás
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Üzenetek -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i><span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Szolgáltatás szűrő -->
+    <div class="type-filter" th:if="${appointmentTypes != null and !#lists.isEmpty(appointmentTypes)}">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>Szolgáltatás típusa
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-primary active" onclick="filterByType(null)">
+                        <i class="fas fa-list me-1"></i>Összes
+                    </button>
+                    <button th:each="type : ${appointmentTypes}"
+                            class="btn btn-outline-primary"
+                            th:onclick="'filterByType(' + ${type.id} + ')'"
+                            th:text="${type.name}">
+                        Szolgáltatás
+                    </button>
+                </div>
+                <div class="mt-3" id="selectedTypeInfo">
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Válasszon szolgáltatás típust a szűréshez
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Heti navigáció -->
+    <div class="week-navigation mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <button id="prevWeek" class="btn btn-outline-primary">
+                <i class="fas fa-chevron-left me-1"></i>Előző hét
+            </button>
+            <div class="text-center">
+                <h5 id="weekRange" class="mb-0">Betöltés...</h5>
+                <small class="text-muted">Kattintson egy időpontra a foglaláshoz</small>
+            </div>
+            <button id="nextWeek" class="btn btn-outline-primary">
+                Következő hét<i class="fas fa-chevron-right ms-1"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Heti naptár -->
+    <div class="card" id="calendarContainer">
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-lg">
+                    <div class="calendar-day p-3">
+                        <div class="day-label text-center">
+                            Hétfő<br><small class="text-muted" id="monday-date">-</small>
+                        </div>
+                        <div id="monday-slots" class="time-slots">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i> Betöltés...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg">
+                    <div class="calendar-day p-3">
+                        <div class="day-label text-center">
+                            Kedd<br><small class="text-muted" id="tuesday-date">-</small>
+                        </div>
+                        <div id="tuesday-slots" class="time-slots">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i> Betöltés...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg">
+                    <div class="calendar-day p-3">
+                        <div class="day-label text-center">
+                            Szerda<br><small class="text-muted" id="wednesday-date">-</small>
+                        </div>
+                        <div id="wednesday-slots" class="time-slots">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i> Betöltés...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg">
+                    <div class="calendar-day p-3">
+                        <div class="day-label text-center">
+                            Csütörtök<br><small class="text-muted" id="thursday-date">-</small>
+                        </div>
+                        <div id="thursday-slots" class="time-slots">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i> Betöltés...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg">
+                    <div class="calendar-day p-3">
+                        <div class="day-label text-center">
+                            Péntek<br><small class="text-muted" id="friday-date">-</small>
+                        </div>
+                        <div id="friday-slots" class="time-slots">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i> Betöltés...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg">
+                    <div class="calendar-day p-3">
+                        <div class="day-label text-center">
+                            Szombat<br><small class="text-muted" id="saturday-date">-</small>
+                        </div>
+                        <div id="saturday-slots" class="time-slots">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i> Betöltés...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg">
+                    <div class="calendar-day p-3">
+                        <div class="day-label text-center">
+                            Vasárnap<br><small class="text-muted" id="sunday-date">-</small>
+                        </div>
+                        <div id="sunday-slots" class="time-slots">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-spinner fa-spin"></i> Betöltés...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Jelmagyarázat -->
+    <div class="card mt-4">
+        <div class="card-body">
+            <h6><i class="fas fa-info-circle me-2"></i>Jelmagyarázat</h6>
+            <div class="row">
+                <div class="col-md-4 mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="time-slot available-slot me-2" style="width: 20px; height: 20px;"></div>
+                        <small>Elérhető időpont</small>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="time-slot booked-slot me-2" style="width: 20px; height: 20px;"></div>
+                        <small>Foglalt időpont</small>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="time-slot full-slot me-2" style="width: 20px; height: 20px;"></div>
+                        <small>Betelt időpont</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Booking Modal -->
+<div class="modal fade" id="bookingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-calendar-plus me-2"></i>Időpont foglalása
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="appointmentDetails">
+                    <!-- Appointment details will be loaded here -->
+                </div>
+                <form id="bookingForm">
+                    <input type="hidden" id="timeSlotId" name="timeSlotId">
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Megjegyzés (opcionális)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"
+                                  placeholder="Írja ide az esetleges megjegyzését..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Mégse</button>
+                <button type="button" class="btn btn-primary" onclick="confirmBooking()">
+                    <i class="fas fa-check me-1"></i>Foglalás megerősítése
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Globális változók
+    const departmentId = /*[[${department.id}]]*/ 1;
+    const appointmentTypes = /*[[${appointmentTypes}]]*/ [];
+
+    let currentWeekStart = new Date();
+    let selectedTypeId = null;
+    let bookingModal;
+
+    // Hét kezdetének beállítása (hétfő)
+    currentWeekStart.setDate(currentWeekStart.getDate() - (currentWeekStart.getDay() === 0 ? 6 : currentWeekStart.getDay() - 1));
+
+    // Modal inicializálása
+    document.addEventListener('DOMContentLoaded', function() {
+        bookingModal = new bootstrap.Modal(document.getElementById('bookingModal'));
+        updateCalendar();
+    });
+
+    function updateCalendar() {
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const date = new Date(currentWeekStart);
+
+        // Dátumok frissítése
+        days.forEach((day, index) => {
+            const dayDate = new Date(date);
+            dayDate.setDate(date.getDate() + index);
+            const dayElement = document.getElementById(`${day}-date`);
+            if (dayElement) {
+                dayElement.textContent = `${(dayDate.getMonth()+1).toString().padStart(2, '0')}.${dayDate.getDate().toString().padStart(2, '0')}.`;
+            }
+        });
+
+        // Heti tartomány frissítése
+        const startDate = new Date(date);
+        const endDate = new Date(date);
+        endDate.setDate(date.getDate() + 6);
+
+        const weekRangeElement = document.getElementById('weekRange');
+        if (weekRangeElement) {
+            weekRangeElement.textContent =
+                `${startDate.getFullYear()}. ${(startDate.getMonth()+1).toString().padStart(2, '0')}. ${startDate.getDate().toString().padStart(2, '0')}. - ` +
+                `${endDate.getFullYear()}. ${(endDate.getMonth()+1).toString().padStart(2, '0')}. ${endDate.getDate().toString().padStart(2, '0')}.`;
+        }
+
+        loadWeeklyAppointments();
+    }
+
+    function loadWeeklyAppointments() {
+        const container = document.getElementById('calendarContainer');
+        if (container) {
+            container.classList.add('loading');
+        }
+
+        const startDateStr = currentWeekStart.toISOString().split('T')[0];
+        let url = `/appointments/department/${departmentId}/weekly?startDate=${startDateStr}`;
+
+        if (selectedTypeId) {
+            url += `&appointmentTypeId=${selectedTypeId}`;
+        }
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                displayAppointments(data);
+            })
+            .catch(error => {
+                console.error('Error loading appointments:', error);
+                displayError('Hiba történt az időpontok betöltésekor');
+            })
+            .finally(() => {
+                if (container) {
+                    container.classList.remove('loading');
+                }
+            });
+    }
+
+    function displayAppointments(appointmentsByDay) {
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+        days.forEach(day => {
+            const container = document.getElementById(`${day}-slots`);
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            const dayAppointments = appointmentsByDay[day] || [];
+
+            if (dayAppointments.length === 0) {
+                const noSlots = document.createElement('div');
+                noSlots.className = 'text-muted text-center py-3';
+                noSlots.innerHTML = '<i class="fas fa-calendar-times"></i><br>Nincs időpont';
+                container.appendChild(noSlots);
+                return;
+            }
+
+            dayAppointments.forEach(appointment => {
+                const slot = document.createElement('div');
+                const isAvailable = appointment.status === 'AVAILABLE' && appointment.currentAttendees < appointment.maxAttendees;
+                const isFull = appointment.currentAttendees >= appointment.maxAttendees;
+
+                let slotClass = 'time-slot ';
+                if (isAvailable) {
+                    slotClass += 'available-slot';
+                } else if (isFull) {
+                    slotClass += 'full-slot';
+                } else {
+                    slotClass += 'booked-slot';
+                }
+
+                slot.className = slotClass;
+
+                const startTime = new Date(appointment.startTime).toLocaleTimeString('hu-HU', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                const endTime = new Date(appointment.endTime).toLocaleTimeString('hu-HU', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                slot.innerHTML = `
+                        <div class="fw-bold">${startTime} - ${endTime}</div>
+                        <div class="appointment-info">
+                            <small class="d-block">${appointment.typeName}</small>
+                            <small class="text-muted">${appointment.currentAttendees}/${appointment.maxAttendees} fő</small>
+                        </div>
+                    `;
+
+                if (isAvailable) {
+                    slot.addEventListener('click', () => showBookingModal(appointment));
+                }
+
+                container.appendChild(slot);
+            });
+        });
+    }
+
+    function displayError(message) {
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        days.forEach(day => {
+            const container = document.getElementById(`${day}-slots`);
+            if (container) {
+                container.innerHTML = `<div class="text-danger text-center py-3"><i class="fas fa-exclamation-triangle"></i><br>${message}</div>`;
+            }
+        });
+    }
+
+    function showBookingModal(appointment) {
+        const startTime = new Date(appointment.startTime).toLocaleString('hu-HU', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        const endTime = new Date(appointment.endTime).toLocaleTimeString('hu-HU', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        // Itt a kulcs változás: appointment.id helyett timeSlotId-t használunk
+        document.getElementById('timeSlotId').value = appointment.id;
+        document.getElementById('appointmentDetails').innerHTML = `
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">${appointment.typeName}</h6>
+                        <p class="card-text">
+                            <i class="fas fa-clock me-1"></i><strong>Időpont:</strong> ${startTime} - ${endTime}<br>
+                            <i class="fas fa-users me-1"></i><strong>Résztvevők:</strong> ${appointment.currentAttendees}/${appointment.maxAttendees} fő<br>
+                            <i class="fas fa-map-marker-alt me-1"></i><strong>Részleg:</strong> ${/*[[${department.name}]]*/ 'Részleg'}
+                        </p>
+                    </div>
+                </div>
+            `;
+
+        bookingModal.show();
+    }
+
+    function confirmBooking() {
+        const timeSlotId = document.getElementById('timeSlotId').value;
+        const notes = document.getElementById('notes').value;
+
+        // Egyszerű form submit használata CSRF token-nel
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/appointments/book/${timeSlotId}`;
+
+        // CSRF token hozzáadása
+        const csrfToken = document.querySelector('meta[name="_csrf"]');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]');
+
+        if (csrfToken && csrfHeader) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = '_csrf';
+            csrfInput.value = csrfToken.getAttribute('content');
+            form.appendChild(csrfInput);
+        }
+
+        // Notes hozzáadása ha van
+        if (notes) {
+            const notesInput = document.createElement('input');
+            notesInput.type = 'hidden';
+            notesInput.name = 'notes';
+            notesInput.value = notes;
+            form.appendChild(notesInput);
+        }
+
+        // Form elküldése
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+        alertDiv.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+        // Alert beszúrása a fejléc után
+        const header = document.querySelector('.bg-primary.bg-opacity-10').parentElement.parentElement;
+        header.insertAdjacentElement('afterend', alertDiv);
+
+        // Automatikus eltűnés 5 másodperc után
+        setTimeout(() => {
+            if (alertDiv.parentElement) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+
+    function filterByType(typeId) {
+        selectedTypeId = typeId;
+
+        // Gombok frissítése
+        document.querySelectorAll('.type-filter .btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+
+        // Információ frissítése
+        const infoDiv = document.getElementById('selectedTypeInfo');
+        if (typeId === null) {
+            infoDiv.innerHTML = '<p class="text-muted mb-0"><i class="fas fa-list me-1"></i>Minden szolgáltatás megjelenítve</p>';
+        } else {
+            const selectedType = appointmentTypes.find(type => type.id === typeId);
+            if (selectedType) {
+                infoDiv.innerHTML = `
+                        <p class="text-muted mb-1"><i class="fas fa-filter me-1"></i>Szűrés: <strong>${selectedType.name}</strong></p>
+                        <small class="text-muted">${selectedType.description || 'Nincs leírás'}</small>
+                    `;
+            }
+        }
+
+        loadWeeklyAppointments();
+    }
+
+    // Event listeners
+    document.getElementById('prevWeek')?.addEventListener('click', () => {
+        currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+        updateCalendar();
+    });
+
+    document.getElementById('nextWeek')?.addEventListener('click', () => {
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+        updateCalendar();
+    });
+
+    // Modal bezárásakor form reset
+    document.getElementById('bookingModal').addEventListener('hidden.bs.modal', function () {
+        document.getElementById('bookingForm').reset();
+    });
+</script>
+</body>
+</html>

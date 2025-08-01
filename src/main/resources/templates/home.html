@@ -211,7 +211,7 @@
         <div class="logo">🗓️ Időpontfoglaló</div>
         <nav>
             <a href="/user/appointments">📅 Időpontjaim</a>
-            <a th:if="${#authorization.expression('hasRole(''ADMIN'')')}" href="/adminDashboard">🏠 Admin Profil</a>
+            <a th:if="${#authorization.expression('hasRole(''ADMIN'')')}" href="/admin/dashboard">🏠 Admin Profil</a>
             <a th:unless="${#authorization.expression('hasRole(''ADMIN'')')}" href="/userDashboard">🏠 Profil</a>
             <a href="/login">🚪 Kijelentkezés</a>
         </nav>

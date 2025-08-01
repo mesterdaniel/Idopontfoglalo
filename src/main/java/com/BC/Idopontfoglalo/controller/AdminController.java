@@ -181,40 +181,7 @@ public class AdminController {
         return "redirect:/admin/users";
     }
 
-    // ========== DASHBOARD ==========
 
-    /**
-     * Admin dashboard - statisztikák
-     */
-    @GetMapping("/dashboard")
-    public String adminDashboard(Model model, Authentication authentication) {
-        try {
-            // Statisztikák gyűjtése
-            long totalUsers = userRepository.count();
-            long totalAppointments = appointmentService.getAllAppointments().size();
-            long pendingAppointments = appointmentService.getPendingAppointmentsCount();
-            long upcomingAppointments = appointmentService.getAllUpcomingAppointments().size();
-
-            // Legújabb időpontok
-            List<Appointment> recentAppointments = appointmentService.getAllAppointments()
-                    .stream()
-                    .sorted((a1, a2) -> a2.getCreatedAt().compareTo(a1.getCreatedAt()))
-                    .limit(5)
-                    .toList();
-
-            model.addAttribute("totalUsers", totalUsers);
-            model.addAttribute("totalAppointments", totalAppointments);
-            model.addAttribute("pendingAppointments", pendingAppointments);
-            model.addAttribute("upcomingAppointments", upcomingAppointments);
-            model.addAttribute("recentAppointments", recentAppointments);
-            model.addAttribute("username", authentication.getName());
-
-            return "admin/dashboard";
-        } catch (Exception e) {
-            model.addAttribute("error", "Hiba történt a dashboard betöltésekor: " + e.getMessage());
-            return "admin/dashboard";
-        }
-    }
 
     // ========== HIBAKEZELÉS ==========
 

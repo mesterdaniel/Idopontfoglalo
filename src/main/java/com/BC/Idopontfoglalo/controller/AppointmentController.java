@@ -1,6 +1,7 @@
 package com.BC.Idopontfoglalo.controller;
 
 import com.BC.Idopontfoglalo.entity.Appointment;
+import com.BC.Idopontfoglalo.entity.AppointmentType;
 import com.BC.Idopontfoglalo.service.AppointmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -64,6 +65,7 @@ public class AppointmentController {
             @RequestParam String appointmentDate,
             @RequestParam String appointmentTime,
             @RequestParam Integer durationMinutes,
+            @RequestParam AppointmentType appointmentType,
             RedirectAttributes redirectAttributes) {
 
         try {
@@ -76,7 +78,8 @@ public class AppointmentController {
                     title,
                     description,
                     dateTime,
-                    durationMinutes
+                    durationMinutes,
+                    appointmentType
             );
 
             redirectAttributes.addFlashAttribute("success",

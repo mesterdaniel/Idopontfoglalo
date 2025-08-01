@@ -1,6 +1,8 @@
 package com.BC.Idopontfoglalo.security;
 
 import com.BC.Idopontfoglalo.controller.CustomAuthenticationSuccessHandler;
+import com.BC.Idopontfoglalo.service.DepartmentService;
+import org.apache.tomcat.util.net.openssl.ciphers.Authentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.stereotype.Component;
 
 
 @Configuration
@@ -24,7 +27,8 @@ public class SecurityConfig {
                         .requestMatchers("/login","/css/**","/js/**").permitAll()
                         .requestMatchers("/register").permitAll()
                         .requestMatchers("/h2-console/**").hasRole("ADMIN")
-                        .requestMatchers("/adminDashboard/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+
                         .anyRequest().authenticated()
                 )
                 .formLogin(login -> login
@@ -50,3 +54,6 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
+
+
+

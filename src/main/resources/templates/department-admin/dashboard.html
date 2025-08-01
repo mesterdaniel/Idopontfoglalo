@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${department != null} ? ${department.name + ' | Admin'} : 'Részleg Admin | Dashboard'">Részleg Admin | Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .stat-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .appointment-type-card {
+            transition: all 0.3s ease;
+        }
+        .appointment-type-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .border-left-primary {
+            border-left-color: #007bff !important;
+        }
+        .border-left-warning {
+            border-left-color: #ffc107 !important;
+        }
+        .border-left-success {
+            border-left-color: #28a745 !important;
+        }
+    </style>
+</head>
+<body>
+<div class="container py-4">
+    <!-- Fejléc -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 th:text="${department != null} ? ${department.name} : 'Ismeretlen részleg'">Részleg neve</h1>
+            <p class="text-muted">Részleg adminisztrátor panel</p>
+        </div>
+        <div>
+            <span class="badge bg-primary" th:text="${username}">admin</span>
+        </div>
+    </div>
+
+    <!-- Üzenetek -->
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <!-- Ha van department -->
+    <div th:if="${department != null}">
+        <!-- Statisztikák -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card stat-card border-left-primary">
+                    <div class="card-body">
+                        <h5 class="card-title">Összes időpont</h5>
+                        <h2 th:text="${totalAppointments} ?: '0'" class="card-text">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card stat-card border-left-warning">
+                    <div class="card-body">
+                        <h5 class="card-title">Függőben lévők</h5>
+                        <h2 th:text="${pendingAppointments} ?: '0'" class="card-text">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card stat-card border-left-success">
+                    <div class="card-body">
+                        <h5 class="card-title">Jövőbeliek</h5>
+                        <h2 th:text="${upcomingAppointments} ?: '0'" class="card-text">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Időponttípusok -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Időpont típusok</h5>
+                <a th:href="@{/department-admin/departments/{id}/new-type(id=${department.id})}" class="btn btn-sm btn-primary">➕ Új típus</a>
+            </div>
+            <div class="card-body">
+                <div class="row" th:if="${appointmentTypes != null and !#lists.isEmpty(appointmentTypes)}">
+                    <div th:each="type : ${appointmentTypes}" class="col-md-4 mb-3">
+                        <div class="card appointment-type-card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <h5 th:text="${type.name}">Típus</h5>
+                                    <span class="badge"
+                                          th:classappend="${type.active} ? 'bg-success' : 'bg-secondary'"
+                                          th:text="${type.active} ? 'Aktív' : 'Inaktív'">Állapot</span>
+                                </div>
+                                <p class="text-muted" th:text="${type.description} ?: 'Nincs leírás'"></p>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock"></i> <span th:text="${type.defaultDurationMinutes}">30</span> perc |
+                                    <i class="fas fa-users"></i> Max <span th:text="${type.maxParticipants}">1</span> fő
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div th:if="${appointmentTypes == null or #lists.isEmpty(appointmentTypes)}">
+                    <p class="text-muted text-center py-4">
+                        <i class="fas fa-calendar-plus fa-3x mb-3 d-block text-secondary"></i>
+                        Nincs elérhető időponttípus. Hozz létre egyet a kezdéshez!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gyors műveletek -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Gyors műveletek</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="d-grid">
+                            <a th:href="@{/department-admin/departments/{id}(id=${department.id})}"
+                               class="btn btn-primary btn-lg">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                Időpont kezelés
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-grid">
+                            <a th:href="@{/department-admin/edit}" class="btn btn-outline-primary btn-lg">
+                                <i class="fas fa-edit me-2"></i>
+                                Részleg szerkesztése
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ha nincs department -->
+    <div th:if="${department == null}" class="alert alert-warning">
+        <strong>Figyelem:</strong> Nem található hozzárendelt részleg. Kérjük, lépjen kapcsolatba az adminisztrátorral.
+    </div>
+
+    <!-- Kijelentkezés -->
+    <div class="d-flex justify-content-between">
+        <div></div>
+        <a href="/login" class="btn btn-outline-secondary">Kijelentkezés</a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://kit.fontawesome.com/your-font-awesome-kit.js" crossorigin="anonymous"></script>
+</body>
+</html>

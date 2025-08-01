@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Dashboard</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Saját CSS -->
+  <link rel="stylesheet" th:href="@{/style.css}">
+  <link rel="stylesheet" href="style.css">
+  <style>
+
+    /* style.css */
+
+    /* Általános stílusok */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+      padding: 0;
+      margin: 0;
+    }
+
+    /* Fejléc stílusok */
+    header {
+      background: linear-gradient(135deg, #2c3e50, #4ca1af);
+      color: white;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2.2rem;
+      font-weight: 600;
+    }
+
+    header p {
+      margin: 0.5rem 0 1.5rem;
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    /* Navigáció */
+    nav {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+
+    nav a:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    /* Kártyák */
+    section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      padding: 0 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border: none;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      color: #2c3e50;
+      font-size: 1.4rem;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 0.8rem;
+      margin-bottom: 1rem;
+    }
+
+    .card p {
+      color: #666;
+      flex-grow: 1;
+    }
+
+    .card a {
+      display: inline-block;
+      background: linear-gradient(135deg, #3498db, #2c3e50);
+      color: white;
+      text-decoration: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 4px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      align-self: flex-start;
+      margin-top: 1rem;
+    }
+
+    .card a:hover {
+      background: linear-gradient(135deg, #2980b9, #1a252f);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Reszponzív design */
+    @media (max-width: 768px) {
+      section {
+        grid-template-columns: 1fr;
+        padding: 0 1rem;
+      }
+
+      header {
+        padding: 1.5rem;
+      }
+
+      nav {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    }
+
+    /* Animációk */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.2s; }
+    .card:nth-child(3) { animation-delay: 0.3s; }
+
+  </style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <h1>Admin Dashboard</h1>
+    <p>Üdvözöllek, <strong th:text="${username}">Admin</strong>!</p>
+    <nav>
+      <a href="/">Kezdőlap</a>
+      <a href="/login">Kijelentkezés</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <div class="card">
+    <h2>Felhasználók kezelése</h2>
+    <p>Itt hozzáférhetsz a felhasználók listájához, módosításához vagy törléséhez.</p>
+    <a href="/admin/users">Felhasználók megtekintése</a>
+  </div>
+
+  <div class="card">
+    <h2>Időpontok kezelése</h2>
+    <p>Adminisztrálhatod az időpontokat, jóváhagyhatod vagy törölheted őket.</p>
+    <a href="/admin/appointments">Időpontok kezelése</a>
+  </div>
+
+  <div class="card">
+    <h2>H2adatbázis</h2>
+    <p>Konzol felüet a H2 adatbázishoz.</p>
+    <a href="/h2-console"> Adatbázis kezelése</a>
+  </div>
+
+  <div class="card">
+    <h2>Részlegek kezelése</h2>
+    <p>Új részleg létrehozás, részleg adminok kezelése</p>
+    <a href="/admin/departments"> Részlegek kezelése</a>
+  </div>
+
+</main>
+</body>
+</html>

@@ -24,9 +24,14 @@ public class User {
     )
     private Set<Role> roles;
 
-    // ÚJ: Kétirányú kapcsolat az Appointment entitással
+    // Időpontokhoz való kapcsolat
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Appointment> appointments = new ArrayList<>();
+
+    // ÚJ: Department admin kapcsolat
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "managed_department_id")
+    private Department managedDepartment; // Ha ez a user egy department admin
 
     // Konstruktorok
     public User() {}
@@ -78,7 +83,6 @@ public class User {
         this.enabled = enabled;
     }
 
-    // ÚJ: Appointment kapcsolat kezelése
     public List<Appointment> getAppointments() {
         return appointments;
     }
@@ -87,16 +91,49 @@ public class User {
         this.appointments = appointments;
     }
 
-    // Kényelmi metódus: időpont hozzáadása
+    // ÚJ: Department management
+    public Department getManagedDepartment() {
+        return managedDepartment;
+    }
+
+    public void setManagedDepartment(Department managedDepartment) {
+        this.managedDepartment = managedDepartment;
+    }
+
+    // Kényelmi metódusok
     public void addAppointment(Appointment appointment) {
         appointments.add(appointment);
         appointment.setUser(this);
     }
 
-    // Kényelmi metódus: időpont eltávolítása
     public void removeAppointment(Appointment appointment) {
         appointments.remove(appointment);
         appointment.setUser(null);
+    }
+
+    /**
+     * Ellenőrzi, hogy a felhasználó főadmin-e
+     */
+    public boolean isSuperAdmin() {
+        return roles.stream()
+                .anyMatch(role -> "ROLE_SUPER_ADMIN".equals(role.getRoleName()));
+    }
+
+    /**
+     * Ellenőrzi, hogy a felhasználó department admin-e
+     */
+    public boolean isDepartmentAdmin() {
+        return roles.stream()
+                .anyMatch(role -> "ROLE_DEPARTMENT_ADMIN".equals(role.getRoleName()))
+                && managedDepartment != null;
+    }
+
+    /**
+     * Ellenőrzi, hogy a felhasználó admin jogosultságokkal rendelkezik-e
+     */
+    public boolean hasAdminRole() {
+        return isSuperAdmin() || isDepartmentAdmin() ||
+                roles.stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getRoleName()));
     }
 
     @Override
@@ -105,6 +142,7 @@ public class User {
                 "id=" + id +
                 ", username='" + username + '\'' +
                 ", enabled=" + enabled +
+                ", managedDepartment=" + (managedDepartment != null ? managedDepartment.getName() : "none") +
                 '}';
     }
 }

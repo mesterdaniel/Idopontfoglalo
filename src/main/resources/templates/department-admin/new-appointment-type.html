@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="hu" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Új Időpont Típus | Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fa;
+    }
+    .form-container {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    .form-header {
+      border-bottom: 2px solid #eee;
+      padding-bottom: 1rem;
+      margin-bottom: 2rem;
+    }
+    .required-label:after {
+      content: " *";
+      color: #dc3545;
+    }
+    .duration-btn {
+      padding: 0.5rem 1rem;
+      border: 2px solid #dee2e6;
+      background: white;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .duration-btn:hover,
+    .duration-btn.active {
+      border-color: #0d6efd;
+      background: #0d6efd;
+      color: white;
+    }
+    .form-section {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #eee;
+    }
+    .form-section h5 {
+      color: #0d6efd;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Új Időpont Típus</h1>
+    <a th:href="@{/department-admin/departments/{id}(id=${department.id})}" class="btn btn-outline-secondary">Vissza a részleghez</a>
+  </div>
+
+  <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+  <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+  <div class="form-container">
+    <div class="form-header">
+      <h2>Időpont Típus Létrehozása</h2>
+      <p class="text-muted">Töltsd ki az alábbi mezőket az új időpont típus létrehozásához</p>
+    </div>
+
+    <form th:action="@{|/department-admin/departments/${department.id}/create-appointment-type|}"
+          method="post">
+
+    <input type="hidden" name="departmentId" th:value="${departmentId}">
+
+      <!-- Alapadatok -->
+      <div class="form-section">
+        <h5>Alapadatok</h5>
+
+        <div class="mb-3">
+          <label for="name" class="form-label required-label">Időpont típus neve</label>
+          <input type="text" class="form-control" id="name" name="name" required
+                 placeholder="Pl.: EKG vizsgálat" th:value="${appointmentType?.name}">
+          <div class="form-text">Az időpont típus megjelenítendő neve</div>
+        </div>
+
+        <div class="mb-3">
+          <label for="description" class="form-label">Leírás</label>
+          <textarea class="form-control" id="description" name="description" rows="3"
+                    placeholder="Pl.: Szív elektrokardiográfia vizsgálat"
+                    th:text="${appointmentType?.description}"></textarea>
+          <div class="form-text">Rövid leírás az időpont típusról</div>
+        </div>
+      </div>
+
+      <!-- Időbeosztás -->
+      <div class="form-section">
+        <h5>Időbeosztás</h5>
+
+        <div class="mb-3">
+          <label for="defaultDurationMinutes" class="form-label required-label">Alapértelmezett időtartam (perc)</label>
+          <input type="number" class="form-control" id="defaultDurationMinutes"
+                 name="defaultDurationMinutes" min="5" max="480" value="25" required
+                 th:value="${appointmentType?.defaultDurationMinutes ?: 25}">
+
+          <div class="d-flex gap-2 mt-2 flex-wrap">
+            <button type="button" class="duration-btn" onclick="setDuration(15)">15 perc</button>
+            <button type="button" class="duration-btn active" onclick="setDuration(25)">25 perc</button>
+            <button type="button" class="duration-btn" onclick="setDuration(30)">30 perc</button>
+            <button type="button" class="duration-btn" onclick="setDuration(45)">45 perc</button>
+            <button type="button" class="duration-btn" onclick="setDuration(60)">1 óra</button>
+          </div>
+          <div class="form-text">Az időpont alapértelmezett időtartama percben (5-480 perc)</div>
+        </div>
+
+        <div class="mb-3">
+          <label for="bufferMinutes" class="form-label">Pufferidő (perc)</label>
+          <input type="number" class="form-control" id="bufferMinutes"
+                 name="bufferMinutes" min="0" max="120" value="5"
+                 th:value="${appointmentType?.bufferMinutes ?: 5}">
+          <div class="form-text">Két időpont között hány perc szünet legyen (0-120 perc)</div>
+        </div>
+      </div>
+
+      <!-- Részletek -->
+      <div class="form-section">
+        <h5>Részletek</h5>
+
+        <div class="mb-3">
+          <label for="maxParticipants" class="form-label required-label">Maximális résztvevők</label>
+          <input type="number" class="form-control" id="maxParticipants"
+                 name="maxParticipants" min="1" max="100" value="2" required
+                 th:value="${appointmentType?.maxParticipants ?: 2}">
+          <div class="form-text">Egyszerre hányan foglalhatnak erre az időpontra (pl. 2 EKG vizsgálat párhuzamosan)</div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="active" name="active" checked>
+              <label class="form-check-label" for="active">Aktív</label>
+            </div>
+            <div class="form-text">Az időpont típus látható és foglalható-e</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Gombok -->
+      <div class="d-flex justify-content-end gap-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-save"></i> Időpont típus mentése
+        </button>
+        <a th:href="@{/department-admin/departments/{id}(id=${department.id})}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-circle"></i> Mégse
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Időtartam beállítása
+  function setDuration(minutes) {
+    document.getElementById('defaultDurationMinutes').value = minutes;
+
+    // Aktív gomb frissítése
+    document.querySelectorAll('.duration-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+  }
+
+  // Űrlap validáció
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const name = document.getElementById('name').value.trim();
+    const duration = parseInt(document.getElementById('defaultDurationMinutes').value);
+    const participants = parseInt(document.getElementById('maxParticipants').value);
+
+    if (!name) {
+      alert('Az időpont típus neve kötelező!');
+      e.preventDefault();
+      return;
+    }
+
+    if (duration < 5 || duration > 480) {
+      alert('Az időtartam 5 és 480 perc között kell legyen!');
+      e.preventDefault();
+      return;
+    }
+
+    if (participants < 1 || participants > 100) {
+      alert('A résztvevők száma 1 és 100 között kell legyen!');
+      e.preventDefault();
+      return;
+    }
+
+    // Példa EKG vizsgálat adatokkal
+    if (name.toLowerCase().includes('ekg') && duration < 20) {
+      if (!confirm('Az EKG vizsgálathoz általában legalább 20 perc szükséges. Biztos, hogy '+duration+' percet állítottál be?')) {
+        e.preventDefault();
+        return;
+      }
+    }
+  });
+
+  // Autofill példa EKG vizsgálathoz
+  document.getElementById('name').addEventListener('change', function() {
+    if (this.value.toLowerCase().includes('ekg')) {
+      if (!document.getElementById('description').value) {
+        document.getElementById('description').value = 'Szív elektrokardiográfia vizsgálat';
+      }
+      if (document.getElementById('defaultDurationMinutes').value < 20) {
+        document.getElementById('defaultDurationMinutes').value = 25;
+        setDuration(25);
+      }
+      if (document.getElementById('maxParticipants').value < 2) {
+        document.getElementById('maxParticipants').value = 2;
+      }
+    }
+  });
+</script>
+</body>
+</html>
