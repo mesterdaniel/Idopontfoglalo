@@ -66,7 +66,8 @@ public class UserController {
             model.addAttribute("department", department);
             model.addAttribute("appointmentTypes", activeTypes);
             model.addAttribute("username", authentication.getName());
-            
+            model.addAttribute("pathvariable", departmentId);
+
             return "user/user-dept-appointments";
         } catch (Exception e) {
             return "redirect:/appointments?error=" + e.getMessage();
