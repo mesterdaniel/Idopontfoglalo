@@ -299,4 +299,35 @@ public class AppointmentTypeService {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Nem található felhasználó: " + username));
     }
+
+    public void updateAppointmentType(
+            Long typeId,
+            String name,
+            String description,
+            Integer defaultDurationMinutes,
+            Integer maxParticipants,
+            Integer bufferMinutes,
+            boolean requiresApproval,
+            boolean active) {
+
+        AppointmentType type = appointmentTypeRepository.findById(typeId)
+                .orElseThrow(() -> new IllegalArgumentException("Nem található időpont típus"));
+
+        // Ellenőrizzük, hogy a név egyedi maradjon a részlegen belül
+        if (!type.getName().equals(name)) {
+            if (appointmentTypeRepository.existsByNameAndDepartment(name, type.getDepartment())) {
+                throw new IllegalArgumentException("Már létezik ilyen nevű időpont típus ebben a részlegben");
+            }
+        }
+
+        type.setName(name);
+        type.setDescription(description);
+        type.setDefaultDurationMinutes(defaultDurationMinutes);
+        type.setMaxParticipants(maxParticipants);
+        type.setBufferMinutes(bufferMinutes);
+        type.setRequiresApproval(requiresApproval);
+        type.setActive(active);
+
+        appointmentTypeRepository.save(type);
+    }
 }
